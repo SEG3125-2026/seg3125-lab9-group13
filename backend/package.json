@@ -1,0 +1,22 @@
+{
+  "name": "player2-parlor-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "jsonwebtoken": "latest",
+    "mysql2": "latest",
+    "uuid": "latest"
+  },
+  "devDependencies": {
+    "nodemon": "latest"
+  }
+}

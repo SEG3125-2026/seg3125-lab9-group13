@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router'
 import { getCartCount } from '../utils/cart.js'
+import { getCurrentUser, isAdmin, isLoggedIn, logout } from '../utils/auth.js'
 
 function Header() {
   const [cartCount, setCartCount] = useState(0)
   const [searchTerm, setSearchTerm] = useState('')
+  const [currentUser, setCurrentUser] = useState(getCurrentUser())
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -33,6 +35,10 @@ function Header() {
     setSearchTerm('')
   }, [location.pathname, location.search])
 
+  useEffect(() => {
+    setCurrentUser(getCurrentUser())
+  }, [location.pathname])
+
   function handleSearchSubmit(event) {
     event.preventDefault()
 
@@ -44,6 +50,12 @@ function Header() {
     }
 
     navigate(`/catalog?q=${encodeURIComponent(trimmedValue)}`)
+  }
+
+  function handleLogout() {
+    logout()
+    setCurrentUser(null)
+    navigate('/')
   }
 
   return (
@@ -76,15 +88,27 @@ function Header() {
             Catalog
           </NavLink>
 
-          <NavLink to="/admin" style={({ isActive }) => getNavLinkStyle(isActive)}>
-            Admin
-          </NavLink>
+          {isAdmin() ? (
+            <NavLink to="/admin" style={({ isActive }) => getNavLinkStyle(isActive)}>
+              Admin
+            </NavLink>
+          ) : null}
         </nav>
 
         <div style={styles.actions}>
-          <NavLink to="/login" style={styles.secondaryButton}>
-            Login
-          </NavLink>
+          {isLoggedIn() && currentUser ? (
+            <span style={styles.userLabel}>Hi, {currentUser.displayName}</span>
+          ) : null}
+
+          {isLoggedIn() ? (
+            <button type="button" style={styles.secondaryButton} onClick={handleLogout}>
+              Logout
+            </button>
+          ) : (
+            <NavLink to="/login" style={styles.secondaryButton}>
+              Login
+            </NavLink>
+          )}
 
           <NavLink to="/cart" style={styles.cartButton}>
             <span>Cart</span>
@@ -130,17 +154,9 @@ const styles = {
     textDecoration: 'none',
     minWidth: '220px',
   },
-  logoBadge: {
+  logoIcon: {
     width: '48px',
     height: '48px',
-    borderRadius: '14px',
-    display: 'grid',
-    placeItems: 'center',
-    fontWeight: 800,
-    fontSize: '1rem',
-    color: '#ffffff',
-    background: 'linear-gradient(135deg, #7c3aed, #06b6d4)',
-    boxShadow: '0 10px 24px rgba(124, 58, 237, 0.22)',
   },
   logoTitle: {
     margin: 0,
@@ -179,6 +195,12 @@ const styles = {
     alignItems: 'center',
     gap: '0.75rem',
     marginLeft: 'auto',
+    flexWrap: 'wrap',
+  },
+  userLabel: {
+    color: '#31224f',
+    fontWeight: 700,
+    fontSize: '0.95rem',
   },
   secondaryButton: {
     textDecoration: 'none',

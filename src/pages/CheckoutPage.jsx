@@ -1,9 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router'
 import AppLayout from '../layouts/AppLayout.jsx'
+import { apiFetch } from '../utils/api.js'
+import { getCurrentUser, isLoggedIn } from '../utils/auth.js'
 import { clearCart, getCartItems } from '../utils/cart.js'
 import { useResponsive } from '../utils/useResponsive.js'
 
 function CheckoutPage() {
+  const navigate = useNavigate()
   const [cartItems, setCartItems] = useState(getCartItems())
   const [formData, setFormData] = useState({
     fullName: '',
@@ -14,7 +18,22 @@ function CheckoutPage() {
     cardNumber: '',
   })
   const [orderPlaced, setOrderPlaced] = useState(false)
+  const [orderSummary, setOrderSummary] = useState(null)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const { isMobile, isTablet } = useResponsive()
+
+  useEffect(() => {
+    const currentUser = getCurrentUser()
+
+    if (currentUser?.email) {
+      setFormData((current) => ({
+        ...current,
+        email: currentUser.email,
+        fullName: current.fullName || currentUser.displayName || '',
+      }))
+    }
+  }, [])
 
   const subtotal = useMemo(() => {
     return cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
@@ -32,24 +51,52 @@ function CheckoutPage() {
     }))
   }
 
-  function handlePlaceOrder(event) {
+  async function handlePlaceOrder(event) {
     event.preventDefault()
+    setError('')
 
     const hasEmptyField = Object.values(formData).some((value) => !value.trim())
 
+    if (!isLoggedIn()) {
+      navigate('/login')
+      return
+    }
+
     if (cartItems.length === 0) {
-      window.alert('Your cart is empty.')
+      setError('Your cart is empty.')
       return
     }
 
     if (hasEmptyField) {
-      window.alert('Please complete all checkout fields before placing the order.')
+      setError('Please complete all checkout fields before placing the order.')
       return
     }
 
-    clearCart()
-    setCartItems([])
-    setOrderPlaced(true)
+    try {
+      setLoading(true)
+
+      const response = await apiFetch('/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          address: formData.address,
+          city: formData.city,
+          items: cartItems.map((item) => ({
+            slug: item.slug,
+            quantity: item.quantity,
+          })),
+        }),
+      })
+
+      clearCart()
+      setCartItems([])
+      setOrderSummary(response)
+      setOrderPlaced(true)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const layoutStyle = {
@@ -70,9 +117,23 @@ function CheckoutPage() {
           <span style={styles.successBadge}>Order Complete</span>
           <h1 style={styles.successTitle}>Thank you for your purchase!</h1>
           <p style={styles.successText}>
-            Your checkout flow has been completed successfully. This screen helps
-            demonstrate the guided purchase process for the lab.
+            Your order has been saved to the database successfully.
           </p>
+
+          {orderSummary ? (
+            <div style={styles.successSummary}>
+              <p style={styles.successMeta}>
+                <strong>Order ID:</strong> {orderSummary.orderId}
+              </p>
+              <p style={styles.successMeta}>
+                <strong>Total:</strong> ${Number(orderSummary.totalAmount).toFixed(2)}
+              </p>
+            </div>
+          ) : null}
+
+          <Link to="/" className="pixel-button" style={styles.successButton}>
+            Back to Home
+          </Link>
         </section>
       </AppLayout>
     )
@@ -93,131 +154,150 @@ function CheckoutPage() {
         <div style={styles.stepPending}>3. Place Order</div>
       </section>
 
-      <section style={layoutStyle}>
-        <form style={styles.formCard} onSubmit={handlePlaceOrder}>
-          <div style={styles.sectionBlock}>
-            <h2 style={styles.sectionTitle}>Shipping Information</h2>
+      {!isLoggedIn() ? (
+        <section style={styles.loginNotice}>
+          <h2 style={styles.loginNoticeTitle}>Login Required</h2>
+          <p style={styles.loginNoticeText}>
+            Please log in before placing an order.
+          </p>
+          <Link to="/login" className="pixel-button">
+            Go to Login
+          </Link>
+        </section>
+      ) : (
+        <section style={layoutStyle}>
+          <form style={styles.formCard} onSubmit={handlePlaceOrder}>
+            <div style={styles.sectionBlock}>
+              <h2 style={styles.sectionTitle}>Shipping Information</h2>
 
-            <div style={formGridStyle}>
-              <div style={styles.formGroup}>
-                <label style={styles.formLabel}>Full Name</label>
-                <input
-                  className="field"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  placeholder="Alex Carter"
-                />
-              </div>
-
-              <div style={styles.formGroup}>
-                <label style={styles.formLabel}>Email</label>
-                <input
-                  className="field"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="alex@email.com"
-                />
-              </div>
-
-              <div style={styles.formGroup}>
-                <label style={styles.formLabel}>Address</label>
-                <input
-                  className="field"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  placeholder="123 Retro Street"
-                />
-              </div>
-
-              <div style={styles.formGroup}>
-                <label style={styles.formLabel}>City</label>
-                <input
-                  className="field"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                  placeholder="Ottawa"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div style={styles.sectionBlock}>
-            <h2 style={styles.sectionTitle}>Payment Information</h2>
-
-            <div style={formGridStyle}>
-              <div style={styles.formGroup}>
-                <label style={styles.formLabel}>Cardholder Name</label>
-                <input
-                  className="field"
-                  name="cardName"
-                  value={formData.cardName}
-                  onChange={handleChange}
-                  placeholder="Alex Carter"
-                />
-              </div>
-
-              <div style={styles.formGroup}>
-                <label style={styles.formLabel}>Card Number</label>
-                <input
-                  className="field"
-                  name="cardNumber"
-                  value={formData.cardNumber}
-                  onChange={handleChange}
-                  placeholder="1111 2222 3333 4444"
-                />
-              </div>
-            </div>
-          </div>
-
-          <button type="submit" className="pixel-button" style={styles.fullButton}>
-            Place Order
-          </button>
-        </form>
-
-        <aside style={styles.summaryCard}>
-          <h2 style={styles.summaryTitle}>Order Summary</h2>
-
-          {cartItems.length > 0 ? (
-            <div style={styles.summaryList}>
-              {cartItems.map((item) => (
-                <div key={item.id} style={styles.summaryItem}>
-                  <div>
-                    <p style={styles.summaryItemTitle}>{item.title}</p>
-                    <p style={styles.summaryItemMeta}>
-                      Qty {item.quantity} · {item.platform}
-                    </p>
-                  </div>
-                  <span style={styles.summaryItemPrice}>
-                    ${(item.price * item.quantity).toFixed(2)}
-                  </span>
+              <div style={formGridStyle}>
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>Full Name</label>
+                  <input
+                    className="field"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    placeholder="Alex Carter"
+                  />
                 </div>
-              ))}
+
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>Email</label>
+                  <input
+                    className="field"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="alex@email.com"
+                  />
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>Address</label>
+                  <input
+                    className="field"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    placeholder="123 Retro Street"
+                  />
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>City</label>
+                  <input
+                    className="field"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    placeholder="Ottawa"
+                  />
+                </div>
+              </div>
             </div>
-          ) : (
-            <p style={styles.emptyText}>Your cart is currently empty.</p>
-          )}
 
-          <div style={styles.summaryRow}>
-            <span>Subtotal</span>
-            <span>${subtotal.toFixed(2)}</span>
-          </div>
+            <div style={styles.sectionBlock}>
+              <h2 style={styles.sectionTitle}>Payment Information</h2>
 
-          <div style={styles.summaryRow}>
-            <span>Tax</span>
-            <span>${tax.toFixed(2)}</span>
-          </div>
+              <div style={formGridStyle}>
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>Cardholder Name</label>
+                  <input
+                    className="field"
+                    name="cardName"
+                    value={formData.cardName}
+                    onChange={handleChange}
+                    placeholder="Alex Carter"
+                  />
+                </div>
 
-          <div style={styles.summaryTotal}>
-            <span>Total</span>
-            <span>${total.toFixed(2)}</span>
-          </div>
-        </aside>
-      </section>
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>Card Number</label>
+                  <input
+                    className="field"
+                    name="cardNumber"
+                    value={formData.cardNumber}
+                    onChange={handleChange}
+                    placeholder="1111 2222 3333 4444"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {error ? <p style={styles.errorText}>{error}</p> : null}
+
+            <button
+              type="submit"
+              className="pixel-button"
+              style={styles.fullButton}
+              disabled={loading}
+            >
+              {loading ? 'Placing Order...' : 'Place Order'}
+            </button>
+          </form>
+
+          <aside style={styles.summaryCard}>
+            <h2 style={styles.summaryTitle}>Order Summary</h2>
+
+            {cartItems.length > 0 ? (
+              <div style={styles.summaryList}>
+                {cartItems.map((item) => (
+                  <div key={item.id} style={styles.summaryItem}>
+                    <div>
+                      <p style={styles.summaryItemTitle}>{item.title}</p>
+                      <p style={styles.summaryItemMeta}>
+                        Qty {item.quantity} · {item.platform}
+                      </p>
+                    </div>
+                    <span style={styles.summaryItemPrice}>
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={styles.emptyText}>Your cart is currently empty.</p>
+            )}
+
+            <div style={styles.summaryRow}>
+              <span>Subtotal</span>
+              <span>${subtotal.toFixed(2)}</span>
+            </div>
+
+            <div style={styles.summaryRow}>
+              <span>Tax</span>
+              <span>${tax.toFixed(2)}</span>
+            </div>
+
+            <div style={styles.summaryTotal}>
+              <span>Total</span>
+              <span>${total.toFixed(2)}</span>
+            </div>
+          </aside>
+        </section>
+      )}
     </AppLayout>
   )
 }
@@ -391,6 +471,50 @@ const styles = {
     color: '#6d6289',
     lineHeight: 1.8,
     maxWidth: '640px',
+  },
+  successSummary: {
+    marginTop: '1rem',
+    marginBottom: '1.25rem',
+    padding: '1rem 1.25rem',
+    borderRadius: '16px',
+    background: '#f8f7ff',
+    border: '1px solid rgba(124, 58, 237, 0.08)',
+  },
+  successMeta: {
+    margin: '0.35rem 0',
+    color: '#31224f',
+    fontWeight: 600,
+  },
+  successButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorText: {
+    margin: '0 0 1rem',
+    padding: '0.85rem 1rem',
+    borderRadius: '12px',
+    background: 'rgba(239, 68, 68, 0.08)',
+    color: '#b91c1c',
+    fontWeight: 700,
+  },
+  loginNotice: {
+    background: '#ffffff',
+    border: '1px solid rgba(124, 58, 237, 0.1)',
+    borderRadius: '24px',
+    padding: '2rem',
+    boxShadow: '0 14px 34px rgba(91, 33, 182, 0.08)',
+    textAlign: 'center',
+  },
+  loginNoticeTitle: {
+    margin: 0,
+    color: '#140f24',
+    fontSize: '1.6rem',
+  },
+  loginNoticeText: {
+    margin: '0.75rem 0 1.25rem',
+    color: '#6d6289',
+    lineHeight: 1.7,
   },
 }
 

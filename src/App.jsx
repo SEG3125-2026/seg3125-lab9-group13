@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router'
+import ProtectedAdminRoute from './components/ProtectedAdminRoute.jsx'
 import AdminPage from './pages/AdminPage.jsx'
 import CartPage from './pages/CartPage.jsx'
 import CatalogPage from './pages/CatalogPage.jsx'
@@ -16,7 +17,14 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/cart" element={<CartPage />} />
       <Route path="/checkout" element={<CheckoutPage />} />
-      <Route path="/admin" element={<AdminPage />} />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedAdminRoute>
+            <AdminPage />
+          </ProtectedAdminRoute>
+        }
+      />
     </Routes>
   )
 }
