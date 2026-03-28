@@ -7,6 +7,7 @@ import {
   setAuthUser,
 } from '../utils/api.js'
 import { useLanguage } from '../context/LanguageContext.jsx'
+import { useToast } from '../context/ToastContext.jsx'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -15,6 +16,7 @@ function LoginPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const { showToast } = useToast()
 
   const [loginForm, setLoginForm] = useState({
     email: '',
@@ -68,7 +70,7 @@ function LoginPage() {
       setAuthToken(data.token)
       setAuthUser(data.user)
 
-      setMessage('Login successful.')
+      showToast('Logged in successfully!', 'success')
 
       if (data.user.role === 'admin') {
         navigate('/admin')

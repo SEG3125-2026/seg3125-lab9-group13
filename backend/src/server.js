@@ -32,10 +32,11 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}.`)
     })
-  } catch (error) {
-    console.error('Failed to start server:', error.message)
-    process.exit(1)
-  }
+    } catch (error) {
+      console.error('Failed to start server:')
+      console.error(error)
+      process.exit(1)
+    }
 }
 
 startServer()

@@ -3,6 +3,11 @@ import { NavLink, useLocation, useNavigate } from 'react-router'
 import { getCartCount } from '../utils/cart.js'
 import { getCurrentUser, isAdmin, isLoggedIn, logout } from '../utils/auth.js'
 import { useLanguage } from '../context/LanguageContext.jsx'
+import { useToast } from '../context/ToastContext.jsx'
+import cartIconUrl from '../assets/cart_icon.svg'
+import profileIconUrl from '../assets/profile_icon.svg'
+import CatalogueIcon from '../assets/catalogue_icon.svg?react'
+import HomeIcon from '../assets/home_icon.svg?react';
 
 function Header() {
   const [cartCount, setCartCount] = useState(0)
@@ -11,6 +16,8 @@ function Header() {
   const navigate = useNavigate()
   const location = useLocation()
   const { language, setLanguage, t } = useLanguage()
+  const { showToast } = useToast()
+  const iconStyle = { width: '20px', height: '20px' }
 
   useEffect(() => {
     function syncCartCount() {
@@ -57,6 +64,7 @@ function Header() {
   function handleLogout() {
     logout()
     setCurrentUser(null)
+    showToast('Logged out successfully!', 'success')
     navigate('/')
   }
 
@@ -83,11 +91,13 @@ function Header() {
 
         <nav style={styles.nav}>
           <NavLink to="/" style={({ isActive }) => getNavLinkStyle(isActive)}>
-            {t('common.home')}
+            <HomeIcon style={iconStyle} fill="currentColor" />
+            <span>{t('common.home')}</span>
           </NavLink>
 
           <NavLink to="/catalog" style={({ isActive }) => getNavLinkStyle(isActive)}>
-            {t('common.catalog')}
+            <CatalogueIcon style={iconStyle} fill="currentColor" />
+            <span>{t('common.catalog')}</span>
           </NavLink>
 
           {isAdmin() ? (
@@ -121,15 +131,18 @@ function Header() {
 
           {isLoggedIn() ? (
             <button type="button" style={styles.secondaryButton} onClick={handleLogout}>
-              {t('common.logout')}
+              <img src={profileIconUrl} alt="Login" style={{ width: '20px', height: '20px' }} />
+              <span>{t('common.logout')}</span>
             </button>
           ) : (
             <NavLink to="/login" style={styles.secondaryButton}>
-              {t('common.login')}
+              <img src={profileIconUrl} alt="Login" style={{ width: '20px', height: '20px' }} />
+              <span>{t('common.login')}</span>
             </NavLink>
           )}
 
           <NavLink to="/cart" style={styles.cartButton}>
+            <img src={cartIconUrl} alt="Cart" style={{ width: '20px', height: '20px' }} />
             <span>{t('common.cart')}</span>
             <span style={styles.cartBadge}>{cartCount}</span>
           </NavLink>
@@ -145,6 +158,9 @@ function getNavLinkStyle(isActive) {
     textDecoration: 'none',
     fontWeight: 700,
     fontSize: '0.95rem',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.55rem',
   }
 }
 
@@ -260,6 +276,9 @@ const styles = {
     borderRadius: '12px',
     padding: '0.75rem 1rem',
     background: '#ffffff',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.55rem',
   },
   cartButton: {
     textDecoration: 'none',
@@ -284,6 +303,15 @@ const styles = {
     color: '#ffffff',
     fontSize: '0.85rem',
     fontWeight: 800,
+  },
+  iconMask: {
+    width: '20px',
+    height: '20px',
+    display: 'inline-block',
+    maskSize: 'contain',
+    WebkitMaskSize: 'contain',
+    maskRepeat: 'no-repeat',
+    WebkitMaskRepeat: 'no-repeat',
   },
 }
 
