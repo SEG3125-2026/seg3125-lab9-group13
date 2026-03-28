@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { useEffect, useMemo, useState } from 'react'
 import GameCard from '../components/GameCard.jsx'
 import { useLanguage } from '../context/LanguageContext.jsx'
+import { useToast } from '../context/ToastContext.jsx'
 import AppLayout from '../layouts/AppLayout.jsx'
 import { games } from '../data/games.js'
 import { apiFetch } from '../utils/api.js'
@@ -14,6 +15,7 @@ function GameDetailPage() {
   const navigate = useNavigate()
   const { isMobile, isTablet } = useResponsive()
   const { language, t } = useLanguage()
+  const { showToast } = useToast()
 
   const game = games.find((item) => item.slug === slug)
 
@@ -73,7 +75,7 @@ function GameDetailPage() {
         ? `${game.title} ${t('gameCard.addedToCartSuffix')}`
         : `${game.title} ${t('gameCard.addedToCartSuffix')}`
 
-    window.alert(message)
+    showToast(message, 'success')
   }
 
   async function handleReviewSubmit(event) {
@@ -106,9 +108,11 @@ function GameDetailPage() {
 
       setReviewComment('')
       setReviewMessage(language === 'zh' ? '评价已保存。' : 'Review saved.')
+      showToast(language === 'zh' ? '评价已保存。' : 'Review saved.', 'success')
       await loadReviews()
     } catch (err) {
       setReviewError(err.message)
+      showToast(err.message, 'error')
     } finally {
       setSubmittingReview(false)
     }

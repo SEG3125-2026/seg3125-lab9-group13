@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { addToCart } from '../utils/cart.js'
 import { useLanguage } from '../context/LanguageContext.jsx'
+import { useToast } from '../context/ToastContext.jsx'
+import { addToCart } from '../utils/cart.js'
 
 function GameCard({ game }) {
   const [imageFailed, setImageFailed] = useState(false)
   const { language, t } = useLanguage()
+  const { showToast } = useToast()
 
   useEffect(() => {
     setImageFailed(false)
@@ -19,7 +21,7 @@ function GameCard({ game }) {
         ? `${game.title} ${t('gameCard.addedToCartSuffix')}`
         : `${game.title} ${t('gameCard.addedToCartSuffix')}`
 
-    window.alert(message)
+    showToast(message, 'success')
   }
 
   return (
