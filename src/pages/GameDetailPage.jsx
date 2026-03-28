@@ -1,82 +1,67 @@
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { useEffect, useMemo, useState } from 'react'
 import GameCard from '../components/GameCard.jsx'
 import { useLanguage } from '../context/LanguageContext.jsx'
 import AppLayout from '../layouts/AppLayout.jsx'
 import { games } from '../data/games.js'
+import { apiFetch } from '../utils/api.js'
 import { addToCart } from '../utils/cart.js'
+import { getCurrentUser, isLoggedIn } from '../utils/auth.js'
 import { useResponsive } from '../utils/useResponsive.js'
-
-const reviewSeed = {
-  'chrono-trigger': [
-    {
-      id: 1,
-      name: 'Alex',
-      rating: 5,
-      comment: 'Great soundtrack, memorable characters, and an excellent story.',
-    },
-    {
-      id: 2,
-      name: 'Jamie',
-      rating: 4,
-      comment: 'A classic JRPG that still feels fun to revisit.',
-    },
-  ],
-  'super-mario-kart': [
-    {
-      id: 3,
-      name: 'Morgan',
-      rating: 5,
-      comment: 'Fast, colorful, and perfect for short play sessions.',
-    },
-    {
-      id: 4,
-      name: 'Taylor',
-      rating: 4,
-      comment: 'Very fun multiplayer and great retro racing energy.',
-    },
-  ],
-}
 
 function GameDetailPage() {
   const { slug } = useParams()
+  const navigate = useNavigate()
   const { isMobile, isTablet } = useResponsive()
   const { language, t } = useLanguage()
 
   const game = games.find((item) => item.slug === slug)
 
-  const initialReviews = useMemo(() => {
-    return reviewSeed[slug] || [
-      {
-        id: 101,
-        name: 'RetroFan',
-        rating: 4,
-        comment: 'A solid retro title with a clean presentation and fun gameplay loop.',
-      },
-      {
-        id: 102,
-        name: 'PixelPlayer',
-        rating: 5,
-        comment: 'I enjoyed the style, pacing, and overall arcade feel of this game.',
-      },
-    ]
-  }, [slug])
-
-  const [reviews, setReviews] = useState(initialReviews)
+  const [reviews, setReviews] = useState([])
   const [reviewName, setReviewName] = useState('')
   const [reviewRating, setReviewRating] = useState('5')
   const [reviewComment, setReviewComment] = useState('')
   const [coverFailed, setCoverFailed] = useState(false)
   const [failedScreenshots, setFailedScreenshots] = useState({})
+  const [reviewsLoading, setReviewsLoading] = useState(true)
+  const [reviewError, setReviewError] = useState('')
+  const [reviewMessage, setReviewMessage] = useState('')
+  const [submittingReview, setSubmittingReview] = useState(false)
 
   useEffect(() => {
-    setReviews(initialReviews)
-  }, [initialReviews])
+    const currentUser = getCurrentUser()
+    setReviewName(currentUser?.displayName || '')
+  }, [])
 
   useEffect(() => {
     setCoverFailed(false)
     setFailedScreenshots({})
   }, [slug])
+
+  useEffect(() => {
+    if (!slug) {
+      return
+    }
+
+    loadReviews()
+  }, [slug])
+
+  async function loadReviews() {
+    try {
+      setReviewsLoading(true)
+      setReviewError('')
+
+      const data = await apiFetch(`/reviews/${slug}`, {
+        headers: {},
+      })
+
+      setReviews(data)
+    } catch (err) {
+      setReviewError(err.message)
+    } finally {
+      setReviewsLoading(false)
+    }
+  }
 
   function handleAddToCart() {
     if (!game) return
@@ -91,28 +76,42 @@ function GameDetailPage() {
     window.alert(message)
   }
 
-  function handleReviewSubmit(event) {
+  async function handleReviewSubmit(event) {
     event.preventDefault()
+    setReviewError('')
+    setReviewMessage('')
 
-    const trimmedName = reviewName.trim()
     const trimmedComment = reviewComment.trim()
 
-    if (!trimmedName || !trimmedComment) {
-      window.alert(t('gameDetailPage.completeReviewError'))
+    if (!isLoggedIn()) {
+      navigate('/login')
       return
     }
 
-    const newReview = {
-      id: Date.now(),
-      name: trimmedName,
-      rating: Number(reviewRating),
-      comment: trimmedComment,
+    if (!trimmedComment) {
+      setReviewError(t('gameDetailPage.completeReviewError'))
+      return
     }
 
-    setReviews((currentReviews) => [newReview, ...currentReviews])
-    setReviewName('')
-    setReviewRating('5')
-    setReviewComment('')
+    try {
+      setSubmittingReview(true)
+
+      await apiFetch(`/reviews/${slug}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          rating: Number(reviewRating),
+          comment: trimmedComment,
+        }),
+      })
+
+      setReviewComment('')
+      setReviewMessage(language === 'zh' ? '评价已保存。' : 'Review saved.')
+      await loadReviews()
+    } catch (err) {
+      setReviewError(err.message)
+    } finally {
+      setSubmittingReview(false)
+    }
   }
 
   function handleScreenshotError(index) {
@@ -307,18 +306,32 @@ function GameDetailPage() {
 
         <div style={reviewLayoutStyle}>
           <div style={styles.reviewListCard}>
-            {reviews.map((review) => (
-              <article key={review.id} style={styles.reviewItem}>
-                <div style={styles.reviewTopRow}>
-                  <div>
-                    <h3 style={styles.reviewName}>{review.name}</h3>
-                    <p style={styles.reviewStars}>{'★'.repeat(review.rating)}</p>
-                  </div>
-                </div>
+            {reviewsLoading ? (
+              <p style={styles.infoText}>{language === 'zh' ? '正在加载评价...' : 'Loading reviews...'}</p>
+            ) : reviewError ? (
+              <p style={styles.errorText}>{reviewError}</p>
+            ) : reviews.length === 0 ? (
+              <p style={styles.infoText}>
+                {language === 'zh' ? '还没有评价，来写第一条吧。' : 'No reviews yet. Be the first to write one.'}
+              </p>
+            ) : (
+              reviews.map((review) => (
+                <article key={review.reviewId} style={styles.reviewItem}>
+                  <div style={styles.reviewTopRow}>
+                    <div>
+                      <h3 style={styles.reviewName}>{review.user.displayName}</h3>
+                      <p style={styles.reviewStars}>{'★'.repeat(review.rating)}</p>
+                    </div>
 
-                <p style={styles.reviewComment}>{review.comment}</p>
-              </article>
-            ))}
+                    <span style={styles.reviewDate}>
+                      {new Date(review.createdAt).toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-CA')}
+                    </span>
+                  </div>
+
+                  <p style={styles.reviewComment}>{review.comment}</p>
+                </article>
+              ))
+            )}
           </div>
 
           <form style={styles.reviewFormCard} onSubmit={handleReviewSubmit}>
@@ -331,7 +344,8 @@ function GameDetailPage() {
                 type="text"
                 placeholder={t('loginPage.username')}
                 value={reviewName}
-                onChange={(event) => setReviewName(event.target.value)}
+                disabled
+                readOnly
               />
             </div>
 
@@ -362,9 +376,25 @@ function GameDetailPage() {
               />
             </div>
 
-            <button type="submit" className="pixel-button" style={styles.fullButton}>
-              {t('gameDetailPage.submitReview')}
-            </button>
+            {!isLoggedIn() ? (
+              <Link to="/login" className="pixel-button" style={styles.fullButton}>
+                {language === 'zh' ? '登录后评价' : 'Log in to Review'}
+              </Link>
+            ) : (
+              <button
+                type="submit"
+                className="pixel-button"
+                style={styles.fullButton}
+                disabled={submittingReview}
+              >
+                {submittingReview
+                  ? (language === 'zh' ? '提交中...' : 'Saving...')
+                  : t('gameDetailPage.submitReview')}
+              </button>
+            )}
+
+            {reviewError ? <p style={styles.errorText}>{reviewError}</p> : null}
+            {reviewMessage ? <p style={styles.successText}>{reviewMessage}</p> : null}
           </form>
         </div>
       </section>
@@ -561,6 +591,7 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     gap: '1rem',
+    alignItems: 'start',
   },
   reviewName: {
     margin: 0,
@@ -571,6 +602,11 @@ const styles = {
     margin: '0.35rem 0 0',
     color: '#7c3aed',
     fontWeight: 700,
+  },
+  reviewDate: {
+    color: '#6d6289',
+    fontSize: '0.85rem',
+    fontWeight: 600,
   },
   reviewComment: {
     margin: '0.75rem 0 0',
@@ -608,6 +644,27 @@ const styles = {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  infoText: {
+    margin: 0,
+    color: '#6d6289',
+    lineHeight: 1.7,
+  },
+  errorText: {
+    margin: '1rem 0 0',
+    padding: '0.8rem 1rem',
+    borderRadius: '12px',
+    background: 'rgba(239, 68, 68, 0.08)',
+    color: '#b91c1c',
+    fontWeight: 700,
+  },
+  successText: {
+    margin: '1rem 0 0',
+    padding: '0.8rem 1rem',
+    borderRadius: '12px',
+    background: 'rgba(16, 185, 129, 0.1)',
+    color: '#047857',
+    fontWeight: 700,
   },
   relatedSection: {
     marginTop: '2rem',
