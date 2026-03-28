@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import AppLayout from '../layouts/AppLayout.jsx'
+import { useLanguage } from '../context/LanguageContext.jsx'
 import { games } from '../data/games.js'
 import {
   clearCart,
@@ -14,6 +15,7 @@ function CartPage() {
   const [cartItems, setCartItems] = useState([])
   const [failedImages, setFailedImages] = useState({})
   const { isMobile, isTablet } = useResponsive()
+  const { t } = useLanguage()
 
   useEffect(() => {
     setCartItems(getCartItems())
@@ -69,17 +71,14 @@ function CartPage() {
 
   const cartLayoutStyle = {
     ...styles.cartLayout,
-    gridTemplateColumns:
-      isMobile || isTablet ? '1fr' : 'minmax(0, 1.4fr) 360px',
+    gridTemplateColumns: isMobile || isTablet ? '1fr' : 'minmax(0, 1.4fr) 360px',
   }
 
   return (
     <AppLayout>
       <section style={styles.pageIntro}>
-        <h1 style={styles.pageTitle}>Your Cart</h1>
-        <p style={styles.pageText}>
-          Review your selected games before checkout.
-        </p>
+        <h1 style={styles.pageTitle}>{t('cartPage.title')}</h1>
+        <p style={styles.pageText}>{t('cartPage.description')}</p>
       </section>
 
       {cartItems.length > 0 ? (
@@ -100,11 +99,6 @@ function CartPage() {
                 justifyItems: isMobile ? 'start' : 'end',
               }
 
-              const quantityRowStyle = {
-                ...styles.quantityRow,
-                justifyContent: 'flex-start',
-              }
-
               return (
                 <div key={item.id} style={cartCardStyle}>
                   <div style={styles.cartThumb}>
@@ -116,7 +110,7 @@ function CartPage() {
                         onError={() => handleImageError(item.id)}
                       />
                     ) : (
-                      <span>Game</span>
+                      <span>{t('common.pixelCover')}</span>
                     )}
                   </div>
 
@@ -124,7 +118,7 @@ function CartPage() {
                     <h3 style={styles.cartItemTitle}>{item.title}</h3>
                     <p style={styles.cartItemText}>{item.platform}</p>
 
-                    <div style={quantityRowStyle}>
+                    <div style={styles.quantityRow}>
                       <button
                         type="button"
                         className="ghost-button"
@@ -157,7 +151,7 @@ function CartPage() {
                       style={styles.removeButton}
                       onClick={() => handleRemove(item.id)}
                     >
-                      Remove
+                      {t('common.remove')}
                     </button>
                   </div>
                 </div>
@@ -166,30 +160,30 @@ function CartPage() {
           </div>
 
           <aside style={styles.summaryCard}>
-            <h2 style={styles.summaryTitle}>Order Summary</h2>
+            <h2 style={styles.summaryTitle}>{t('cartPage.orderSummary')}</h2>
 
             <div style={styles.summaryRow}>
-              <span>Items</span>
+              <span>{t('common.items')}</span>
               <span>{cartItems.reduce((sum, item) => sum + item.quantity, 0)}</span>
             </div>
 
             <div style={styles.summaryRow}>
-              <span>Subtotal</span>
+              <span>{t('common.subtotal')}</span>
               <span>${subtotal.toFixed(2)}</span>
             </div>
 
             <div style={styles.summaryRow}>
-              <span>Tax</span>
+              <span>{t('common.tax')}</span>
               <span>${tax.toFixed(2)}</span>
             </div>
 
             <div style={styles.summaryTotal}>
-              <span>Total</span>
+              <span>{t('common.total')}</span>
               <span>${total.toFixed(2)}</span>
             </div>
 
             <Link to="/checkout" className="pixel-button" style={styles.fullButton}>
-              Proceed to Checkout
+              {t('common.proceedToCheckout')}
             </Link>
 
             <button
@@ -198,16 +192,14 @@ function CartPage() {
               type="button"
               onClick={handleClearCart}
             >
-              Clear Cart
+              {t('common.clearCart')}
             </button>
           </aside>
         </section>
       ) : (
         <section style={styles.emptyState}>
-          <h2 style={styles.emptyTitle}>Your cart is empty</h2>
-          <p style={styles.emptyText}>
-            Add some retro games to start your order.
-          </p>
+          <h2 style={styles.emptyTitle}>{t('cartPage.emptyTitle')}</h2>
+          <p style={styles.emptyText}>{t('cartPage.emptyText')}</p>
         </section>
       )}
     </AppLayout>
@@ -277,15 +269,14 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '0.65rem',
-    marginTop: '0.9rem',
-    flexWrap: 'wrap',
+    marginTop: '0.85rem',
   },
   quantityButton: {
     minWidth: '42px',
-    padding: '0.5rem 0.7rem',
+    padding: '0.55rem 0.7rem',
   },
   quantityValue: {
-    minWidth: '24px',
+    minWidth: '28px',
     textAlign: 'center',
     color: '#140f24',
     fontWeight: 800,
@@ -302,10 +293,10 @@ const styles = {
   removeButton: {
     border: 'none',
     background: 'transparent',
-    color: '#d94674',
+    color: '#dc2626',
     fontWeight: 700,
-    cursor: 'pointer',
     padding: 0,
+    textAlign: 'left',
   },
   summaryCard: {
     background: '#ffffff',
@@ -317,7 +308,7 @@ const styles = {
   summaryTitle: {
     margin: 0,
     color: '#140f24',
-    fontSize: '1.25rem',
+    fontSize: '1.2rem',
   },
   summaryRow: {
     display: 'flex',
@@ -346,20 +337,17 @@ const styles = {
     justifyContent: 'center',
   },
   emptyState: {
-    minHeight: '50vh',
     background: '#ffffff',
     border: '1px solid rgba(124, 58, 237, 0.1)',
     borderRadius: '24px',
-    display: 'grid',
-    placeItems: 'center',
-    textAlign: 'center',
     padding: '2rem',
+    textAlign: 'center',
     boxShadow: '0 14px 34px rgba(91, 33, 182, 0.08)',
   },
   emptyTitle: {
     margin: 0,
     color: '#140f24',
-    fontSize: '1.5rem',
+    fontSize: '1.6rem',
   },
   emptyText: {
     margin: '0.75rem 0 0',

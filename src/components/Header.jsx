@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router'
 import { getCartCount } from '../utils/cart.js'
 import { getCurrentUser, isAdmin, isLoggedIn, logout } from '../utils/auth.js'
+import { useLanguage } from '../context/LanguageContext.jsx'
 
 function Header() {
   const [cartCount, setCartCount] = useState(0)
@@ -9,6 +10,7 @@ function Header() {
   const [currentUser, setCurrentUser] = useState(getCurrentUser())
   const navigate = useNavigate()
   const location = useLocation()
+  const { language, setLanguage, t } = useLanguage()
 
   useEffect(() => {
     function syncCartCount() {
@@ -65,14 +67,14 @@ function Header() {
           <img src="/favicon.svg" alt="P2 Logo" style={styles.logoIcon} />
           <div>
             <p style={styles.logoTitle}>Player 2: Parlor</p>
-            <p style={styles.logoSubtitle}>Retro Game Storefront</p>
+            <p style={styles.logoSubtitle}>{t('header.storeSubtitle')}</p>
           </div>
         </NavLink>
 
         <form style={styles.searchWrap} onSubmit={handleSearchSubmit}>
           <input
             type="text"
-            placeholder="Search retro games..."
+            placeholder={t('common.searchRetroGames')}
             style={styles.searchInput}
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
@@ -81,37 +83,54 @@ function Header() {
 
         <nav style={styles.nav}>
           <NavLink to="/" style={({ isActive }) => getNavLinkStyle(isActive)}>
-            Home
+            {t('common.home')}
           </NavLink>
 
           <NavLink to="/catalog" style={({ isActive }) => getNavLinkStyle(isActive)}>
-            Catalog
+            {t('common.catalog')}
           </NavLink>
 
           {isAdmin() ? (
             <NavLink to="/admin" style={({ isActive }) => getNavLinkStyle(isActive)}>
-              Admin
+              {t('common.admin')}
             </NavLink>
           ) : null}
         </nav>
 
         <div style={styles.actions}>
+          <div style={styles.languageWrap}>
+            <label htmlFor="language-select" style={styles.languageLabel}>
+              {t('common.language')}
+            </label>
+            <select
+              id="language-select"
+              value={language}
+              onChange={(event) => setLanguage(event.target.value)}
+              style={styles.languageSelect}
+            >
+              <option value="en">{t('common.english')}</option>
+              <option value="zh">{t('common.chineseSimplified')}</option>
+            </select>
+          </div>
+
           {isLoggedIn() && currentUser ? (
-            <span style={styles.userLabel}>Hi, {currentUser.displayName}</span>
+            <span style={styles.userLabel} title={currentUser.displayName}>
+              {t('header.greeting')}, {currentUser.displayName}
+            </span>
           ) : null}
 
           {isLoggedIn() ? (
             <button type="button" style={styles.secondaryButton} onClick={handleLogout}>
-              Logout
+              {t('common.logout')}
             </button>
           ) : (
             <NavLink to="/login" style={styles.secondaryButton}>
-              Login
+              {t('common.login')}
             </NavLink>
           )}
 
           <NavLink to="/cart" style={styles.cartButton}>
-            <span>Cart</span>
+            <span>{t('common.cart')}</span>
             <span style={styles.cartBadge}>{cartCount}</span>
           </NavLink>
         </div>
@@ -193,14 +212,45 @@ const styles = {
   actions: {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: '0.75rem',
+    rowGap: '0.6rem',
     marginLeft: 'auto',
     flexWrap: 'wrap',
+    maxWidth: '100%',
+  },
+  languageWrap: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.45rem',
+    padding: '0.35rem 0.45rem',
+    borderRadius: '12px',
+    background: '#ffffff',
+    border: '1px solid rgba(124, 58, 237, 0.12)',
+  },
+  languageLabel: {
+    color: '#4c4168',
+    fontWeight: 700,
+    fontSize: '0.9rem',
+    whiteSpace: 'nowrap',
+  },
+  languageSelect: {
+    border: '1px solid rgba(124, 58, 237, 0.15)',
+    borderRadius: '10px',
+    padding: '0.5rem 0.65rem',
+    background: '#ffffff',
+    color: '#31224f',
+    fontWeight: 600,
+    maxWidth: '120px',
   },
   userLabel: {
     color: '#31224f',
     fontWeight: 700,
     fontSize: '0.95rem',
+    maxWidth: '180px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   secondaryButton: {
     textDecoration: 'none',

@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import StatsCard from '../components/StatsCard.jsx'
+import { useLanguage } from '../context/LanguageContext.jsx'
 import AppLayout from '../layouts/AppLayout.jsx'
 import { apiFetch } from '../utils/api.js'
 import { useResponsive } from '../utils/useResponsive.js'
 
 function AdminPage() {
   const { isMobile, isTablet, isDesktop } = useResponsive()
+  const { language, t } = useLanguage()
 
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -24,13 +26,16 @@ function AdminPage() {
   const [error, setError] = useState('')
   const [actionMessage, setActionMessage] = useState('')
   const [deletingUserId, setDeletingUserId] = useState('')
+  const [activeSection, setActiveSection] = useState('overview')
+
+  const locale = language === 'zh' ? 'zh-CN' : 'en-CA'
 
   const currencyFormatter = useMemo(() => {
-    return new Intl.NumberFormat('en-CA', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'CAD',
     })
-  }, [])
+  }, [locale])
 
   const recentOrders = useMemo(() => {
     return orders.slice(0, 5)
@@ -53,6 +58,40 @@ function AdminPage() {
   useEffect(() => {
     loadSalesTrend(salesTrendDays)
   }, [salesTrendDays])
+
+  useEffect(() => {
+    const sectionIds = ['overview', 'sales', 'users', 'orders']
+
+    function updateActiveSection() {
+      const offset = 140
+      let currentSection = 'overview'
+
+      for (const id of sectionIds) {
+        const element = document.getElementById(id)
+
+        if (!element) {
+          continue
+        }
+
+        const top = element.getBoundingClientRect().top
+
+        if (top - offset <= 0) {
+          currentSection = id
+        }
+      }
+
+      setActiveSection(currentSection)
+    }
+
+    updateActiveSection()
+    window.addEventListener('scroll', updateActiveSection)
+    window.addEventListener('hashchange', updateActiveSection)
+
+    return () => {
+      window.removeEventListener('scroll', updateActiveSection)
+      window.removeEventListener('hashchange', updateActiveSection)
+    }
+  }, [])
 
   async function loadAdminData() {
     try {
@@ -92,7 +131,7 @@ function AdminPage() {
   }
 
   async function handleDeleteUser(userId, displayName) {
-    const confirmed = window.confirm(`Delete ${displayName}?`)
+    const confirmed = window.confirm(`${t('adminPage.deleteUserConfirm')} ${displayName}?`)
 
     if (!confirmed) {
       return
@@ -112,7 +151,7 @@ function AdminPage() {
         ...current,
         totalUsers: Math.max(0, current.totalUsers - 1),
       }))
-      setActionMessage('User deleted successfully.')
+      setActionMessage(t('adminPage.userDeletedSuccessfully'))
     } catch (err) {
       setError(err.message)
     } finally {
@@ -162,22 +201,38 @@ function AdminPage() {
     <AppLayout>
       <section style={adminLayoutStyle}>
         <aside style={sidebarStyle}>
-          <h2 style={styles.adminSidebarTitle}>Dashboard</h2>
+          <h2 style={styles.adminSidebarTitle}>{t('adminPage.dashboard')}</h2>
 
-          <a href="#overview" style={styles.adminNavItemActive}>
-            Overview
+          <a
+            href="#overview"
+            style={getSidebarLinkStyle(activeSection === 'overview')}
+            onClick={() => setActiveSection('overview')}
+          >
+            {t('adminPage.overview')}
           </a>
 
-          <a href="#sales" style={styles.adminNavItem}>
-            Sales
+          <a
+            href="#sales"
+            style={getSidebarLinkStyle(activeSection === 'sales')}
+            onClick={() => setActiveSection('sales')}
+          >
+            {t('adminPage.sales')}
           </a>
 
-          <a href="#users" style={styles.adminNavItem}>
-            Users
+          <a
+            href="#users"
+            style={getSidebarLinkStyle(activeSection === 'users')}
+            onClick={() => setActiveSection('users')}
+          >
+            {t('adminPage.users')}
           </a>
 
-          <a href="#orders" style={styles.adminNavItem}>
-            Orders
+          <a
+            href="#orders"
+            style={getSidebarLinkStyle(activeSection === 'orders')}
+            onClick={() => setActiveSection('orders')}
+          >
+            {t('adminPage.orders')}
           </a>
         </aside>
 
@@ -185,14 +240,12 @@ function AdminPage() {
           <section id="overview" style={styles.anchorSection}>
             <div style={headerStyle}>
               <div>
-                <h1 style={styles.pageTitle}>Admin Dashboard</h1>
-                <p style={styles.pageText}>
-                  View live store statistics, sales reports, user accounts, and recent orders.
-                </p>
+                <h1 style={styles.pageTitle}>{t('adminPage.pageTitle')}</h1>
+                <p style={styles.pageText}>{t('adminPage.pageText')}</p>
               </div>
 
               <button className="ghost-button" type="button" onClick={handleRefresh}>
-                Refresh
+                {t('common.refresh')}
               </button>
             </div>
 
@@ -201,24 +254,24 @@ function AdminPage() {
 
             <div style={statsGridStyle}>
               <StatsCard
-                label="Total Revenue"
+                label={t('adminPage.totalRevenue')}
                 value={currencyFormatter.format(stats.totalRevenue)}
-                detail="Live database value"
+                detail={t('adminPage.liveDatabaseValue')}
               />
               <StatsCard
-                label="Total Users"
+                label={t('adminPage.totalUsers')}
                 value={String(stats.totalUsers)}
-                detail="Registered accounts"
+                detail={t('adminPage.registeredAccounts')}
               />
               <StatsCard
-                label="Total Games"
+                label={t('adminPage.totalGames')}
                 value={String(stats.totalGames)}
-                detail="Games in catalog"
+                detail={t('adminPage.gamesInCatalog')}
               />
               <StatsCard
-                label="Orders"
+                label={t('adminPage.ordersCount')}
                 value={String(stats.totalOrders)}
-                detail="Completed and pending"
+                detail={t('adminPage.completedAndPending')}
               />
             </div>
           </section>
@@ -228,9 +281,9 @@ function AdminPage() {
               <div style={styles.panelCard}>
                 <div style={styles.cardHeader}>
                   <div>
-                    <h2 style={styles.chartTitle}>Sales Trend</h2>
+                    <h2 style={styles.chartTitle}>{t('adminPage.salesTrend')}</h2>
                     <p style={styles.cardText}>
-                      Daily revenue for the last {salesTrendDays} days.
+                      {t('adminPage.salesTrendText')} {salesTrendDays} {language === 'zh' ? '天' : 'days'}.
                     </p>
                   </div>
 
@@ -240,20 +293,20 @@ function AdminPage() {
                       style={getToggleStyle(salesTrendDays === 7)}
                       onClick={() => setSalesTrendDays(7)}
                     >
-                      7 Days
+                      {t('adminPage.days7')}
                     </button>
                     <button
                       type="button"
                       style={getToggleStyle(salesTrendDays === 30)}
                       onClick={() => setSalesTrendDays(30)}
                     >
-                      30 Days
+                      {t('adminPage.days30')}
                     </button>
                   </div>
                 </div>
 
                 {salesTrend.length === 0 ? (
-                  <p style={styles.loadingText}>No sales data yet.</p>
+                  <p style={styles.loadingText}>{t('adminPage.noSalesDataYet')}</p>
                 ) : (
                   <div style={styles.barChart}>
                     {salesTrend.map((item) => (
@@ -277,14 +330,14 @@ function AdminPage() {
               <div style={styles.panelCard}>
                 <div style={styles.cardHeader}>
                   <div>
-                    <h2 style={styles.chartTitle}>Top Selling Games</h2>
-                    <p style={styles.cardText}>Top 5 games by quantity sold.</p>
+                    <h2 style={styles.chartTitle}>{t('adminPage.topSellingGames')}</h2>
+                    <p style={styles.cardText}>{t('adminPage.topSellingGamesText')}</p>
                   </div>
-                  <span className="tag">Top 5</span>
+                  <span className="tag">{t('adminPage.top5')}</span>
                 </div>
 
                 {topGames.length === 0 ? (
-                  <p style={styles.loadingText}>No game sales yet.</p>
+                  <p style={styles.loadingText}>{t('adminPage.noGameSalesYet')}</p>
                 ) : (
                   <div style={styles.listChart}>
                     {topGames.map((item) => (
@@ -304,7 +357,7 @@ function AdminPage() {
                         </div>
 
                         <p style={styles.listRevenue}>
-                          Revenue: {currencyFormatter.format(item.totalRevenue)}
+                          {t('common.revenue')}: {currencyFormatter.format(item.totalRevenue)}
                         </p>
                       </div>
                     ))}
@@ -316,40 +369,40 @@ function AdminPage() {
             <section style={styles.panelCard}>
               <div style={styles.cardHeader}>
                 <div>
-                  <h2 style={styles.chartTitle}>Order Status / Basic Summary</h2>
-                  <p style={styles.cardText}>Key order metrics and the latest orders.</p>
+                  <h2 style={styles.chartTitle}>{t('adminPage.orderSummaryTitle')}</h2>
+                  <p style={styles.cardText}>{t('adminPage.orderSummaryText')}</p>
                 </div>
-                <span className="tag">Orders</span>
+                <span className="tag">{t('adminPage.orders')}</span>
               </div>
 
               <div style={styles.snapshotGrid}>
                 <div style={styles.snapshotItem}>
-                  <span style={styles.snapshotLabel}>Total Orders</span>
+                  <span style={styles.snapshotLabel}>{t('adminPage.ordersCount')}</span>
                   <strong style={styles.snapshotValue}>{stats.totalOrders}</strong>
                 </div>
                 <div style={styles.snapshotItem}>
-                  <span style={styles.snapshotLabel}>Total Revenue</span>
+                  <span style={styles.snapshotLabel}>{t('adminPage.totalRevenue')}</span>
                   <strong style={styles.snapshotValue}>
                     {currencyFormatter.format(stats.totalRevenue)}
                   </strong>
                 </div>
                 <div style={styles.snapshotItem}>
-                  <span style={styles.snapshotLabel}>Average Order Value</span>
+                  <span style={styles.snapshotLabel}>{t('adminPage.averageOrderValue')}</span>
                   <strong style={styles.snapshotValue}>
                     {currencyFormatter.format(stats.averageOrderValue)}
                   </strong>
                 </div>
                 <div style={styles.snapshotItem}>
-                  <span style={styles.snapshotLabel}>Reviews</span>
+                  <span style={styles.snapshotLabel}>{t('adminPage.reviewsCount')}</span>
                   <strong style={styles.snapshotValue}>{stats.totalReviews}</strong>
                 </div>
               </div>
 
               <div style={styles.recentOrdersBlock}>
-                <h3 style={styles.subsectionTitle}>Recent Orders</h3>
+                <h3 style={styles.subsectionTitle}>{t('adminPage.recentOrders')}</h3>
 
                 {recentOrders.length === 0 ? (
-                  <p style={styles.loadingText}>No recent orders yet.</p>
+                  <p style={styles.loadingText}>{t('adminPage.noRecentOrdersYet')}</p>
                 ) : (
                   <div style={styles.recentOrderList}>
                     {recentOrders.map((order) => (
@@ -357,12 +410,12 @@ function AdminPage() {
                         <div>
                           <p style={styles.recentOrderName}>{order.customer.displayName}</p>
                           <p style={styles.recentOrderMeta}>
-                            {new Date(order.createdAt).toLocaleString('en-CA')}
+                            {new Date(order.createdAt).toLocaleString(locale)}
                           </p>
                         </div>
 
                         <div style={styles.recentOrderRight}>
-                          <span style={styles.orderStatus}>{order.status}</span>
+                          <span style={styles.orderStatus}>{translateOrderStatus(order.status, language)}</span>
                           <span style={styles.recentOrderTotal}>
                             {currencyFormatter.format(order.totalAmount)}
                           </span>
@@ -379,24 +432,24 @@ function AdminPage() {
             <section style={styles.panelCard}>
               <div style={styles.cardHeader}>
                 <div>
-                  <h2 style={styles.chartTitle}>User Management</h2>
-                  <p style={styles.cardText}>Admin can review and delete customer accounts.</p>
+                  <h2 style={styles.chartTitle}>{t('adminPage.userManagement')}</h2>
+                  <p style={styles.cardText}>{t('adminPage.userManagementText')}</p>
                 </div>
-                <span className="tag">Users</span>
+                <span className="tag">{t('adminPage.users')}</span>
               </div>
 
               {loading ? (
-                <p style={styles.loadingText}>Loading admin data...</p>
+                <p style={styles.loadingText}>{t('adminPage.loadingAdminData')}</p>
               ) : users.length === 0 ? (
-                <p style={styles.loadingText}>No users found.</p>
+                <p style={styles.loadingText}>{t('adminPage.noUsersFound')}</p>
               ) : (
                 <div style={styles.tablePlaceholder}>
                   <div style={tableHeaderStyle}>
-                    <span>Name</span>
-                    <span>Email</span>
-                    {!isMobile && <span>Role</span>}
-                    {!isMobile && <span>Created</span>}
-                    <span>Action</span>
+                    <span>{t('common.name')}</span>
+                    <span>{t('common.email')}</span>
+                    {!isMobile && <span>{t('common.role')}</span>}
+                    {!isMobile && <span>{t('common.created')}</span>}
+                    <span>{t('common.action')}</span>
                   </div>
 
                   {users.map((user) => {
@@ -418,13 +471,13 @@ function AdminPage() {
 
                         {!isMobile && (
                           <span style={styles.tableMetaText}>
-                            {new Date(user.created_at).toLocaleDateString('en-CA')}
+                            {new Date(user.created_at).toLocaleDateString(locale)}
                           </span>
                         )}
 
                         <div>
                           {isAdminUser ? (
-                            <span style={styles.adminBadge}>Protected</span>
+                            <span style={styles.adminBadge}>{t('common.protected')}</span>
                           ) : (
                             <button
                               type="button"
@@ -432,7 +485,7 @@ function AdminPage() {
                               onClick={() => handleDeleteUser(user.user_id, user.display_name)}
                               disabled={deletingUserId === user.user_id}
                             >
-                              {deletingUserId === user.user_id ? 'Deleting...' : 'Delete'}
+                              {deletingUserId === user.user_id ? t('common.deleting') : t('common.delete')}
                             </button>
                           )}
                         </div>
@@ -448,18 +501,16 @@ function AdminPage() {
             <section style={styles.panelCard}>
               <div style={styles.cardHeader}>
                 <div>
-                  <h2 style={styles.chartTitle}>Recent Orders Detail</h2>
-                  <p style={styles.cardText}>
-                    See who placed an order, when it was placed, and what was purchased.
-                  </p>
+                  <h2 style={styles.chartTitle}>{t('adminPage.recentOrdersDetail')}</h2>
+                  <p style={styles.cardText}>{t('adminPage.recentOrdersDetailText')}</p>
                 </div>
-                <span className="tag">Detail</span>
+                <span className="tag">{t('adminPage.orders')}</span>
               </div>
 
               {loading ? (
-                <p style={styles.loadingText}>Loading order data...</p>
+                <p style={styles.loadingText}>{t('adminPage.loadingOrderData')}</p>
               ) : orders.length === 0 ? (
-                <p style={styles.loadingText}>No orders found.</p>
+                <p style={styles.loadingText}>{t('adminPage.noOrdersFound')}</p>
               ) : (
                 <div style={styles.orderList}>
                   {orders.map((order) => (
@@ -471,7 +522,7 @@ function AdminPage() {
                         </div>
 
                         <div style={styles.orderHeaderRight}>
-                          <span style={styles.orderStatus}>{order.status}</span>
+                          <span style={styles.orderStatus}>{translateOrderStatus(order.status, language)}</span>
                           <span style={styles.orderTotal}>
                             {currencyFormatter.format(order.totalAmount)}
                           </span>
@@ -480,30 +531,30 @@ function AdminPage() {
 
                       <div style={styles.orderMetaGrid}>
                         <div style={styles.orderMetaItem}>
-                          <span style={styles.orderMetaLabel}>Order ID</span>
+                          <span style={styles.orderMetaLabel}>{t('common.orderId')}</span>
                           <span style={styles.orderMetaValue}>{order.orderId}</span>
                         </div>
 
                         <div style={styles.orderMetaItem}>
-                          <span style={styles.orderMetaLabel}>Order Time</span>
+                          <span style={styles.orderMetaLabel}>{t('common.orderTime')}</span>
                           <span style={styles.orderMetaValue}>
-                            {new Date(order.createdAt).toLocaleString('en-CA')}
+                            {new Date(order.createdAt).toLocaleString(locale)}
                           </span>
                         </div>
 
                         <div style={styles.orderMetaItem}>
-                          <span style={styles.orderMetaLabel}>Shipping Name</span>
+                          <span style={styles.orderMetaLabel}>{t('common.shippingName')}</span>
                           <span style={styles.orderMetaValue}>{order.shippingName}</span>
                         </div>
 
                         <div style={styles.orderMetaItem}>
-                          <span style={styles.orderMetaLabel}>Shipping Address</span>
+                          <span style={styles.orderMetaLabel}>{t('common.shippingAddress')}</span>
                           <span style={styles.orderMetaValue}>{order.shippingAddress}</span>
                         </div>
                       </div>
 
                       <div style={styles.orderItemsBlock}>
-                        <h4 style={styles.orderItemsTitle}>Items</h4>
+                        <h4 style={styles.orderItemsTitle}>{t('common.items')}</h4>
 
                         <div style={styles.orderItemList}>
                           {order.items.map((item) => (
@@ -511,7 +562,7 @@ function AdminPage() {
                               <div>
                                 <p style={styles.orderItemTitle}>{item.title}</p>
                                 <p style={styles.orderItemMeta}>
-                                  Qty {item.quantity} · Unit {currencyFormatter.format(item.unitPrice)}
+                                  {t('common.quantityShort')} {item.quantity} · {t('adminPage.qtyUnit')} {currencyFormatter.format(item.unitPrice)}
                                 </p>
                               </div>
 
@@ -534,6 +585,17 @@ function AdminPage() {
   )
 }
 
+function translateOrderStatus(status, language) {
+  const map = {
+    pending: language === 'zh' ? '待处理' : 'Pending',
+    paid: language === 'zh' ? '已支付' : 'Paid',
+    shipped: language === 'zh' ? '已发货' : 'Shipped',
+    cancelled: language === 'zh' ? '已取消' : 'Cancelled',
+  }
+
+  return map[status] || status
+}
+
 function getToggleStyle(isActive) {
   return {
     border: isActive ? '1px solid rgba(124, 58, 237, 0.18)' : '1px solid rgba(124, 58, 237, 0.1)',
@@ -542,6 +604,19 @@ function getToggleStyle(isActive) {
     borderRadius: '12px',
     padding: '0.65rem 0.9rem',
     fontWeight: 800,
+  }
+}
+
+function getSidebarLinkStyle(isActive) {
+  return {
+    marginTop: '0.75rem',
+    display: 'block',
+    padding: '0.8rem 0.9rem',
+    borderRadius: '14px',
+    background: isActive ? 'rgba(124, 58, 237, 0.12)' : '#f8f7ff',
+    color: isActive ? '#7c3aed' : '#6d6289',
+    fontWeight: isActive ? 800 : 700,
+    textDecoration: 'none',
   }
 }
 
@@ -572,26 +647,6 @@ const styles = {
     margin: 0,
     color: '#140f24',
     fontSize: '1.1rem',
-  },
-  adminNavItemActive: {
-    marginTop: '1rem',
-    display: 'block',
-    padding: '0.8rem 0.9rem',
-    borderRadius: '14px',
-    background: 'rgba(124, 58, 237, 0.12)',
-    color: '#7c3aed',
-    fontWeight: 800,
-    textDecoration: 'none',
-  },
-  adminNavItem: {
-    marginTop: '0.75rem',
-    display: 'block',
-    padding: '0.8rem 0.9rem',
-    borderRadius: '14px',
-    background: '#f8f7ff',
-    color: '#6d6289',
-    fontWeight: 700,
-    textDecoration: 'none',
   },
   anchorSection: {
     scrollMarginTop: '110px',

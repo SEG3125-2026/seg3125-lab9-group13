@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import GameCard from '../components/GameCard.jsx'
 import AppLayout from '../layouts/AppLayout.jsx'
@@ -7,11 +8,28 @@ import {
   newReleaseGames,
   trendingGames,
 } from '../data/games.js'
+import { useLanguage } from '../context/LanguageContext.jsx'
+import { isLoggedIn } from '../utils/auth.js'
 import { useResponsive } from '../utils/useResponsive.js'
 
 function HomePage() {
   const featuredGame = featuredGames[0]
   const { isMobile, isTablet } = useResponsive()
+  const { t } = useLanguage()
+  const [loggedIn, setLoggedIn] = useState(isLoggedIn())
+
+  useEffect(() => {
+    function syncAuthState() {
+      setLoggedIn(isLoggedIn())
+    }
+
+    syncAuthState()
+    window.addEventListener('auth-changed', syncAuthState)
+
+    return () => {
+      window.removeEventListener('auth-changed', syncAuthState)
+    }
+  }, [])
 
   const heroSectionStyle = {
     ...styles.heroSection,
@@ -55,76 +73,73 @@ function HomePage() {
     <AppLayout>
       <section style={heroSectionStyle}>
         <div style={heroTextStyle}>
-          <span style={styles.badge}>Classic Games. Modern Experience.</span>
-          <h1 style={heroTitleStyle}>Relive the golden age of gaming.</h1>
-          <p style={styles.heroDescription}>
-            Browse beloved retro titles, discover new favorites, and bring the
-            arcade home with a clean shopping experience built for every player.
-          </p>
+          <span style={styles.badge}>{t('home.heroBadge')}</span>
+          <h1 style={heroTitleStyle}>{t('home.heroTitle')}</h1>
+          <p style={styles.heroDescription}>{t('home.heroDescription')}</p>
 
           <div style={styles.heroActions}>
             <Link to="/catalog" className="pixel-button">
-              Browse Collection
+              {t('home.browseCollection')}
             </Link>
 
             <a href="#best-sellers" className="ghost-button">
-              View Best Sellers
+              {t('home.viewBestSellers')}
             </a>
           </div>
         </div>
 
         {featuredGame && (
           <div style={heroCardStyle}>
-            <p style={styles.heroCardLabel}>Featured Drop</p>
+            <p style={styles.heroCardLabel}>{t('home.featuredDrop')}</p>
             <h2 style={styles.heroCardTitle}>{featuredGame.title}</h2>
             <p style={styles.heroCardText}>{featuredGame.shortDescription}</p>
 
             <div style={styles.heroMetaRow}>
               <span style={styles.price}>${featuredGame.price.toFixed(2)}</span>
-              <span className="tag">Top Rated</span>
+              <span className="tag">{t('home.topRated')}</span>
             </div>
           </div>
         )}
       </section>
 
       <HomeSection
-        title="Trending Games"
-        description="Popular titles players are checking out this week."
+        title={t('home.trendingGames')}
+        description={t('home.trendingDescription')}
         items={trendingGames}
       />
 
       <HomeSection
-        title="New Releases"
-        description="Fresh arrivals with retro style and modern polish."
+        title={t('home.newReleases')}
+        description={t('home.newReleasesDescription')}
         items={newReleaseGames}
       />
 
       <HomeSection
         id="best-sellers"
-        title="Best Sellers"
-        description="Fan-favorite classics and must-have collector picks."
+        title={t('home.bestSellers')}
+        description={t('home.bestSellersDescription')}
         items={bestSellerGames}
       />
 
-      <section style={ctaSectionStyle}>
-        <div style={styles.ctaContent}>
-          <p style={styles.ctaEyebrow}>Join the arcade club</p>
-          <h2 style={styles.ctaTitle}>
-            Create an account and keep your cart, favorites, and orders in one
-            place.
-          </h2>
-        </div>
+      {!loggedIn ? (
+        <section style={ctaSectionStyle}>
+          <div style={styles.ctaContent}>
+            <p style={styles.ctaEyebrow}>{t('home.joinClub')}</p>
+            <h2 style={styles.ctaTitle}>{t('home.createAccountTitle')}</h2>
+          </div>
 
-        <Link to="/login" className="pixel-button" style={ctaButtonStyle}>
-          Create Account
-        </Link>
-      </section>
+          <Link to="/login" className="pixel-button" style={ctaButtonStyle}>
+            {t('home.createAccount')}
+          </Link>
+        </section>
+      ) : null}
     </AppLayout>
   )
 }
 
 function HomeSection({ id, title, description, items }) {
   const { isMobile } = useResponsive()
+  const { t } = useLanguage()
 
   const sectionHeaderStyle = {
     ...styles.sectionHeader,
@@ -155,7 +170,7 @@ function HomeSection({ id, title, description, items }) {
         </div>
 
         <Link to="/catalog" className="ghost-button" style={seeAllStyle}>
-          See All
+          {t('common.seeAll')}
         </Link>
       </div>
 
@@ -211,90 +226,87 @@ const styles = {
   },
   heroCard: {
     borderRadius: '28px',
-    background: 'linear-gradient(180deg, #13091f 0%, #28114a 100%)',
+    background: 'linear-gradient(180deg, #1b1030, #281545)',
     color: '#ffffff',
     boxShadow: '0 18px 45px rgba(91, 33, 182, 0.18)',
+    display: 'grid',
+    alignContent: 'start',
   },
   heroCardLabel: {
     margin: 0,
-    color: '#67e8f9',
-    fontSize: '0.9rem',
+    color: '#9eeaf9',
     fontWeight: 700,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+    fontSize: '0.82rem',
   },
   heroCardTitle: {
     margin: '1rem 0 0.75rem',
-    fontSize: '2rem',
+    fontSize: '1.8rem',
     lineHeight: 1.1,
   },
   heroCardText: {
     margin: 0,
-    color: '#dbd4f7',
+    color: 'rgba(255, 255, 255, 0.8)',
     lineHeight: 1.7,
   },
   heroMetaRow: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: '1rem',
-    marginTop: '2rem',
-    flexWrap: 'wrap',
+    marginTop: '1.4rem',
+  },
+  price: {
+    fontSize: '1.45rem',
+    fontWeight: 800,
   },
   section: {
-    marginTop: '2rem',
-    scrollMarginTop: '110px',
+    marginBottom: '2rem',
   },
   sectionHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     gap: '1rem',
     marginBottom: '1rem',
-    flexWrap: 'wrap',
   },
   sectionHeading: {
     margin: 0,
     color: '#140f24',
-    fontSize: '1.4rem',
+    fontSize: '1.7rem',
   },
   sectionDescription: {
-    margin: '0.45rem 0 0',
+    margin: '0.5rem 0 0',
     color: '#6d6289',
-    lineHeight: 1.6,
+    lineHeight: 1.7,
   },
   cardGrid: {
     display: 'grid',
     gap: '1rem',
   },
-  price: {
-    color: '#7c3aed',
-    fontWeight: 800,
-    fontSize: '1.1rem',
-  },
   ctaSection: {
-    marginTop: '2rem',
-    borderRadius: '28px',
-    background: 'linear-gradient(135deg, #ffffff, #eefbff)',
-    border: '1px solid rgba(6, 182, 212, 0.14)',
     display: 'flex',
     justifyContent: 'space-between',
     gap: '1rem',
-    flexWrap: 'wrap',
-    boxShadow: '0 14px 34px rgba(6, 182, 212, 0.08)',
+    background: 'linear-gradient(135deg, #1d1334, #261747)',
+    borderRadius: '28px',
+    color: '#ffffff',
+    boxShadow: '0 18px 45px rgba(91, 33, 182, 0.14)',
   },
   ctaContent: {
-    maxWidth: '760px',
+    maxWidth: '720px',
   },
   ctaEyebrow: {
     margin: 0,
-    color: '#06b6d4',
-    fontWeight: 800,
+    color: '#67e8f9',
+    fontWeight: 700,
     textTransform: 'uppercase',
-    letterSpacing: '0.06em',
-    fontSize: '0.85rem',
+    fontSize: '0.82rem',
+    letterSpacing: '0.05em',
   },
   ctaTitle: {
-    margin: '0.7rem 0 0',
-    color: '#140f24',
-    fontSize: '1.35rem',
+    margin: '0.85rem 0 0',
+    fontSize: '1.6rem',
     lineHeight: 1.45,
   },
 }

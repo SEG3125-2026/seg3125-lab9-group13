@@ -17,6 +17,11 @@ export function isAdmin() {
   return user?.role === 'admin'
 }
 
+export function notifyAuthChanged() {
+  window.dispatchEvent(new Event('auth-changed'))
+}
+
 export function logout() {
   clearAuthData()
+  notifyAuthChanged()
 }

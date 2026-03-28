@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import AppLayout from '../layouts/AppLayout.jsx'
+import { useLanguage } from '../context/LanguageContext.jsx'
 import { apiFetch } from '../utils/api.js'
 import { getCurrentUser, isLoggedIn } from '../utils/auth.js'
 import { clearCart, getCartItems } from '../utils/cart.js'
@@ -8,6 +9,7 @@ import { useResponsive } from '../utils/useResponsive.js'
 
 function CheckoutPage() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [cartItems, setCartItems] = useState(getCartItems())
   const [formData, setFormData] = useState({
     fullName: '',
@@ -63,12 +65,12 @@ function CheckoutPage() {
     }
 
     if (cartItems.length === 0) {
-      setError('Your cart is empty.')
+      setError(t('checkoutPage.yourCartEmpty'))
       return
     }
 
     if (hasEmptyField) {
-      setError('Please complete all checkout fields before placing the order.')
+      setError(t('checkoutPage.completeAllFields'))
       return
     }
 
@@ -101,8 +103,7 @@ function CheckoutPage() {
 
   const layoutStyle = {
     ...styles.layout,
-    gridTemplateColumns:
-      isMobile || isTablet ? '1fr' : 'minmax(0, 1.2fr) 360px',
+    gridTemplateColumns: isMobile || isTablet ? '1fr' : 'minmax(0, 1.2fr) 360px',
   }
 
   const formGridStyle = {
@@ -114,25 +115,23 @@ function CheckoutPage() {
     return (
       <AppLayout>
         <section style={styles.successCard}>
-          <span style={styles.successBadge}>Order Complete</span>
-          <h1 style={styles.successTitle}>Thank you for your purchase!</h1>
-          <p style={styles.successText}>
-            Your order has been saved to the database successfully.
-          </p>
+          <span style={styles.successBadge}>{t('checkoutPage.orderComplete')}</span>
+          <h1 style={styles.successTitle}>{t('checkoutPage.thankYou')}</h1>
+          <p style={styles.successText}>{t('checkoutPage.orderSaved')}</p>
 
           {orderSummary ? (
             <div style={styles.successSummary}>
               <p style={styles.successMeta}>
-                <strong>Order ID:</strong> {orderSummary.orderId}
+                <strong>{t('common.orderId')}:</strong> {orderSummary.orderId}
               </p>
               <p style={styles.successMeta}>
-                <strong>Total:</strong> ${Number(orderSummary.totalAmount).toFixed(2)}
+                <strong>{t('common.total')}:</strong> ${Number(orderSummary.totalAmount).toFixed(2)}
               </p>
             </div>
           ) : null}
 
           <Link to="/" className="pixel-button" style={styles.successButton}>
-            Back to Home
+            {t('checkoutPage.backToHome')}
           </Link>
         </section>
       </AppLayout>
@@ -142,37 +141,33 @@ function CheckoutPage() {
   return (
     <AppLayout>
       <section style={styles.pageIntro}>
-        <h1 style={styles.pageTitle}>Checkout</h1>
-        <p style={styles.pageText}>
-          Follow the steps below to complete your purchase.
-        </p>
+        <h1 style={styles.pageTitle}>{t('checkoutPage.title')}</h1>
+        <p style={styles.pageText}>{t('checkoutPage.description')}</p>
       </section>
 
       <section style={styles.stepRow}>
-        <div style={styles.stepActive}>1. Review Cart</div>
-        <div style={styles.stepActive}>2. Enter Details</div>
-        <div style={styles.stepPending}>3. Place Order</div>
+        <div style={styles.stepActive}>1. {t('checkoutPage.reviewCart')}</div>
+        <div style={styles.stepActive}>2. {t('checkoutPage.enterDetails')}</div>
+        <div style={styles.stepPending}>3. {t('checkoutPage.placeOrderStep')}</div>
       </section>
 
       {!isLoggedIn() ? (
         <section style={styles.loginNotice}>
-          <h2 style={styles.loginNoticeTitle}>Login Required</h2>
-          <p style={styles.loginNoticeText}>
-            Please log in before placing an order.
-          </p>
+          <h2 style={styles.loginNoticeTitle}>{t('checkoutPage.loginRequired')}</h2>
+          <p style={styles.loginNoticeText}>{t('checkoutPage.loginRequiredText')}</p>
           <Link to="/login" className="pixel-button">
-            Go to Login
+            {t('checkoutPage.goToLogin')}
           </Link>
         </section>
       ) : (
         <section style={layoutStyle}>
           <form style={styles.formCard} onSubmit={handlePlaceOrder}>
             <div style={styles.sectionBlock}>
-              <h2 style={styles.sectionTitle}>Shipping Information</h2>
+              <h2 style={styles.sectionTitle}>{t('checkoutPage.shippingInformation')}</h2>
 
               <div style={formGridStyle}>
                 <div style={styles.formGroup}>
-                  <label style={styles.formLabel}>Full Name</label>
+                  <label style={styles.formLabel}>{t('checkoutPage.fullName')}</label>
                   <input
                     className="field"
                     name="fullName"
@@ -183,7 +178,7 @@ function CheckoutPage() {
                 </div>
 
                 <div style={styles.formGroup}>
-                  <label style={styles.formLabel}>Email</label>
+                  <label style={styles.formLabel}>{t('checkoutPage.email')}</label>
                   <input
                     className="field"
                     name="email"
@@ -195,7 +190,7 @@ function CheckoutPage() {
                 </div>
 
                 <div style={styles.formGroup}>
-                  <label style={styles.formLabel}>Address</label>
+                  <label style={styles.formLabel}>{t('checkoutPage.address')}</label>
                   <input
                     className="field"
                     name="address"
@@ -206,7 +201,7 @@ function CheckoutPage() {
                 </div>
 
                 <div style={styles.formGroup}>
-                  <label style={styles.formLabel}>City</label>
+                  <label style={styles.formLabel}>{t('checkoutPage.city')}</label>
                   <input
                     className="field"
                     name="city"
@@ -219,11 +214,11 @@ function CheckoutPage() {
             </div>
 
             <div style={styles.sectionBlock}>
-              <h2 style={styles.sectionTitle}>Payment Information</h2>
+              <h2 style={styles.sectionTitle}>{t('checkoutPage.paymentInformation')}</h2>
 
               <div style={formGridStyle}>
                 <div style={styles.formGroup}>
-                  <label style={styles.formLabel}>Cardholder Name</label>
+                  <label style={styles.formLabel}>{t('checkoutPage.cardholderName')}</label>
                   <input
                     className="field"
                     name="cardName"
@@ -234,7 +229,7 @@ function CheckoutPage() {
                 </div>
 
                 <div style={styles.formGroup}>
-                  <label style={styles.formLabel}>Card Number</label>
+                  <label style={styles.formLabel}>{t('checkoutPage.cardNumber')}</label>
                   <input
                     className="field"
                     name="cardNumber"
@@ -254,12 +249,12 @@ function CheckoutPage() {
               style={styles.fullButton}
               disabled={loading}
             >
-              {loading ? 'Placing Order...' : 'Place Order'}
+              {loading ? t('checkoutPage.placingOrder') : t('checkoutPage.placeOrder')}
             </button>
           </form>
 
           <aside style={styles.summaryCard}>
-            <h2 style={styles.summaryTitle}>Order Summary</h2>
+            <h2 style={styles.summaryTitle}>{t('cartPage.orderSummary')}</h2>
 
             {cartItems.length > 0 ? (
               <div style={styles.summaryList}>
@@ -268,7 +263,7 @@ function CheckoutPage() {
                     <div>
                       <p style={styles.summaryItemTitle}>{item.title}</p>
                       <p style={styles.summaryItemMeta}>
-                        Qty {item.quantity} · {item.platform}
+                        {t('common.quantityShort')} {item.quantity} · {item.platform}
                       </p>
                     </div>
                     <span style={styles.summaryItemPrice}>
@@ -278,21 +273,21 @@ function CheckoutPage() {
                 ))}
               </div>
             ) : (
-              <p style={styles.emptyText}>Your cart is currently empty.</p>
+              <p style={styles.emptyText}>{t('checkoutPage.emptyCartText')}</p>
             )}
 
             <div style={styles.summaryRow}>
-              <span>Subtotal</span>
+              <span>{t('common.subtotal')}</span>
               <span>${subtotal.toFixed(2)}</span>
             </div>
 
             <div style={styles.summaryRow}>
-              <span>Tax</span>
+              <span>{t('common.tax')}</span>
               <span>${tax.toFixed(2)}</span>
             </div>
 
             <div style={styles.summaryTotal}>
-              <span>Total</span>
+              <span>{t('common.total')}</span>
               <span>${total.toFixed(2)}</span>
             </div>
           </aside>

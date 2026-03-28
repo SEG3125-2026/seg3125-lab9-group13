@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { addToCart } from '../utils/cart.js'
+import { useLanguage } from '../context/LanguageContext.jsx'
 
 function GameCard({ game }) {
   const [imageFailed, setImageFailed] = useState(false)
+  const { language, t } = useLanguage()
 
   useEffect(() => {
     setImageFailed(false)
@@ -11,7 +13,13 @@ function GameCard({ game }) {
 
   function handleAddToCart() {
     addToCart(game)
-    window.alert(`${game.title} was added to your cart.`)
+
+    const message =
+      language === 'zh'
+        ? `${game.title} ${t('gameCard.addedToCartSuffix')}`
+        : `${game.title} ${t('gameCard.addedToCartSuffix')}`
+
+    window.alert(message)
   }
 
   return (
@@ -25,7 +33,7 @@ function GameCard({ game }) {
             onError={() => setImageFailed(true)}
           />
         ) : (
-          <span style={styles.gameThumbLabel}>Pixel Cover</span>
+          <span style={styles.gameThumbLabel}>{t('common.pixelCover')}</span>
         )}
       </div>
 
@@ -53,7 +61,7 @@ function GameCard({ game }) {
             style={styles.primaryAction}
             onClick={handleAddToCart}
           >
-            Add to Cart
+            {t('common.addToCart')}
           </button>
 
           <Link
@@ -61,7 +69,7 @@ function GameCard({ game }) {
             className="ghost-button"
             style={styles.secondaryAction}
           >
-            View Details
+            {t('common.viewDetails')}
           </Link>
         </div>
       </div>

@@ -1,38 +1,39 @@
 import { Link, useParams } from 'react-router'
 import { useEffect, useMemo, useState } from 'react'
 import GameCard from '../components/GameCard.jsx'
+import { useLanguage } from '../context/LanguageContext.jsx'
 import AppLayout from '../layouts/AppLayout.jsx'
 import { games } from '../data/games.js'
 import { addToCart } from '../utils/cart.js'
 import { useResponsive } from '../utils/useResponsive.js'
 
 const reviewSeed = {
-  'chrono-blaster-dx': [
+  'chrono-trigger': [
     {
       id: 1,
       name: 'Alex',
       rating: 5,
-      comment: 'Fast gameplay, strong soundtrack, and great retro arcade energy.',
+      comment: 'Great soundtrack, memorable characters, and an excellent story.',
     },
     {
       id: 2,
       name: 'Jamie',
       rating: 4,
-      comment: 'Challenging bosses and fun replay value. A strong pick for shooter fans.',
+      comment: 'A classic JRPG that still feels fun to revisit.',
     },
   ],
-  'pixel-kart-94': [
+  'super-mario-kart': [
     {
       id: 3,
       name: 'Morgan',
       rating: 5,
-      comment: 'Super fun racing game with colorful tracks and easy controls.',
+      comment: 'Fast, colorful, and perfect for short play sessions.',
     },
     {
       id: 4,
       name: 'Taylor',
       rating: 4,
-      comment: 'Great for quick sessions and local competition.',
+      comment: 'Very fun multiplayer and great retro racing energy.',
     },
   ],
 }
@@ -40,6 +41,7 @@ const reviewSeed = {
 function GameDetailPage() {
   const { slug } = useParams()
   const { isMobile, isTablet } = useResponsive()
+  const { language, t } = useLanguage()
 
   const game = games.find((item) => item.slug === slug)
 
@@ -80,7 +82,13 @@ function GameDetailPage() {
     if (!game) return
 
     addToCart(game)
-    window.alert(`${game.title} was added to your cart.`)
+
+    const message =
+      language === 'zh'
+        ? `${game.title} ${t('gameCard.addedToCartSuffix')}`
+        : `${game.title} ${t('gameCard.addedToCartSuffix')}`
+
+    window.alert(message)
   }
 
   function handleReviewSubmit(event) {
@@ -90,7 +98,7 @@ function GameDetailPage() {
     const trimmedComment = reviewComment.trim()
 
     if (!trimmedName || !trimmedComment) {
-      window.alert('Please complete your name and review before submitting.')
+      window.alert(t('gameDetailPage.completeReviewError'))
       return
     }
 
@@ -118,12 +126,10 @@ function GameDetailPage() {
     return (
       <AppLayout>
         <section style={styles.notFound}>
-          <h1 style={styles.notFoundTitle}>Game not found</h1>
-          <p style={styles.notFoundText}>
-            The game you are looking for could not be found.
-          </p>
+          <h1 style={styles.notFoundTitle}>{t('gameDetailPage.gameNotFound')}</h1>
+          <p style={styles.notFoundText}>{t('gameDetailPage.gameNotFoundText')}</p>
           <Link to="/catalog" className="pixel-button">
-            Back to Catalog
+            {t('gameDetailPage.backToCatalog')}
           </Link>
         </section>
       </AppLayout>
@@ -172,31 +178,10 @@ function GameDetailPage() {
     flexDirection: isMobile ? 'column' : 'row',
   }
 
-  const primaryActionStyle = {
-    width: isMobile ? '100%' : 'auto',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  }
-
-  const secondaryActionStyle = {
-    width: isMobile ? '100%' : 'auto',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  }
-
   const relatedHeaderStyle = {
     ...styles.relatedHeader,
     flexDirection: isMobile ? 'column' : 'row',
     alignItems: isMobile ? 'stretch' : 'end',
-  }
-
-  const browseMoreStyle = {
-    width: isMobile ? '100%' : 'auto',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
   }
 
   const cardGridStyle = {
@@ -221,9 +206,9 @@ function GameDetailPage() {
   return (
     <AppLayout>
       <section style={styles.breadcrumbRow}>
-        <Link to="/" style={styles.breadcrumbLink}>Home</Link>
+        <Link to="/" style={styles.breadcrumbLink}>{t('common.home')}</Link>
         <span style={styles.breadcrumbDivider}>/</span>
-        <Link to="/catalog" style={styles.breadcrumbLink}>Catalog</Link>
+        <Link to="/catalog" style={styles.breadcrumbLink}>{t('common.catalog')}</Link>
         <span style={styles.breadcrumbDivider}>/</span>
         <span style={styles.breadcrumbCurrent}>{game.title}</span>
       </section>
@@ -239,7 +224,7 @@ function GameDetailPage() {
                 onError={() => setCoverFailed(true)}
               />
             ) : (
-              <span style={styles.coverLabel}>Pixel Cover</span>
+              <span style={styles.coverLabel}>{t('common.pixelCover')}</span>
             )}
           </div>
 
@@ -254,7 +239,7 @@ function GameDetailPage() {
                     onError={() => handleScreenshotError(index)}
                   />
                 ) : (
-                  <span>Screenshot {index + 1}</span>
+                  <span>{t('gameDetailPage.screenshot')} {index + 1}</span>
                 )}
               </div>
             ))}
@@ -270,48 +255,43 @@ function GameDetailPage() {
 
           <div style={metaGridStyle}>
             <div style={styles.metaItem}>
-              <span style={styles.metaLabel}>Platform</span>
+              <span style={styles.metaLabel}>{t('common.platform')}</span>
               <span style={styles.metaValue}>{game.platform}</span>
             </div>
 
             <div style={styles.metaItem}>
-              <span style={styles.metaLabel}>Release Year</span>
+              <span style={styles.metaLabel}>{t('common.releaseYear')}</span>
               <span style={styles.metaValue}>{game.year}</span>
             </div>
 
             <div style={styles.metaItem}>
-              <span style={styles.metaLabel}>Developer</span>
-              <span style={styles.metaValue}>{game.developer || 'Unknown Studio'}</span>
+              <span style={styles.metaLabel}>{t('common.developer')}</span>
+              <span style={styles.metaValue}>{game.developer || t('gameDetailPage.unknownStudio')}</span>
             </div>
 
             <div style={styles.metaItem}>
-              <span style={styles.metaLabel}>Rating</span>
+              <span style={styles.metaLabel}>{t('common.rating')}</span>
               <span style={styles.metaValue}>★ {game.rating}</span>
             </div>
 
             <div style={styles.metaItem}>
-              <span style={styles.metaLabel}>Price</span>
+              <span style={styles.metaLabel}>{t('common.price')}</span>
               <span style={styles.price}>${game.price.toFixed(2)}</span>
             </div>
           </div>
 
           <div style={styles.descriptionBlock}>
-            <h2 style={styles.sectionTitle}>Description</h2>
+            <h2 style={styles.sectionTitle}>{t('common.description')}</h2>
             <p style={styles.descriptionText}>{game.description}</p>
           </div>
 
           <div style={actionRowStyle}>
-            <button
-              className="pixel-button"
-              type="button"
-              onClick={handleAddToCart}
-              style={primaryActionStyle}
-            >
-              Add to Cart
+            <button className="pixel-button" type="button" onClick={handleAddToCart}>
+              {t('common.addToCart')}
             </button>
 
-            <Link to="/cart" className="ghost-button" style={secondaryActionStyle}>
-              Go to Cart
+            <Link to="/cart" className="ghost-button">
+              {t('common.goToCart')}
             </Link>
           </div>
         </div>
@@ -320,10 +300,8 @@ function GameDetailPage() {
       <section style={styles.reviewSection}>
         <div style={styles.reviewSectionHeader}>
           <div>
-            <h2 style={styles.sectionHeading}>Player Reviews</h2>
-            <p style={styles.sectionText}>
-              Read feedback from other players and share your own opinion.
-            </p>
+            <h2 style={styles.sectionHeading}>{t('gameDetailPage.playerReviews')}</h2>
+            <p style={styles.sectionText}>{t('gameDetailPage.playerReviewsText')}</p>
           </div>
         </div>
 
@@ -344,21 +322,21 @@ function GameDetailPage() {
           </div>
 
           <form style={styles.reviewFormCard} onSubmit={handleReviewSubmit}>
-            <h3 style={styles.reviewFormTitle}>Leave a Review</h3>
+            <h3 style={styles.reviewFormTitle}>{t('gameDetailPage.leaveReview')}</h3>
 
             <div style={styles.formGroup}>
-              <label style={styles.formLabel}>Name</label>
+              <label style={styles.formLabel}>{t('common.name')}</label>
               <input
                 className="field"
                 type="text"
-                placeholder="Your name"
+                placeholder={t('loginPage.username')}
                 value={reviewName}
                 onChange={(event) => setReviewName(event.target.value)}
               />
             </div>
 
             <div style={styles.formGroup}>
-              <label style={styles.formLabel}>Rating</label>
+              <label style={styles.formLabel}>{t('common.rating')}</label>
               <select
                 className="field"
                 value={reviewRating}
@@ -373,10 +351,10 @@ function GameDetailPage() {
             </div>
 
             <div style={styles.formGroup}>
-              <label style={styles.formLabel}>Review</label>
+              <label style={styles.formLabel}>{t('gameDetailPage.review')}</label>
               <textarea
                 className="field"
-                placeholder="Share your thoughts about this game..."
+                placeholder={t('gameDetailPage.reviewPlaceholder')}
                 rows="5"
                 value={reviewComment}
                 onChange={(event) => setReviewComment(event.target.value)}
@@ -384,8 +362,8 @@ function GameDetailPage() {
               />
             </div>
 
-            <button type="submit" className="pixel-button" style={styles.submitButton}>
-              Submit Review
+            <button type="submit" className="pixel-button" style={styles.fullButton}>
+              {t('gameDetailPage.submitReview')}
             </button>
           </form>
         </div>
@@ -394,20 +372,17 @@ function GameDetailPage() {
       <section style={styles.relatedSection}>
         <div style={relatedHeaderStyle}>
           <div>
-            <h2 style={styles.sectionHeading}>Related Games</h2>
-            <p style={styles.sectionText}>
-              More titles in the {game.genre} category.
-            </p>
+            <h2 style={styles.sectionHeading}>{t('gameDetailPage.relatedGames')}</h2>
           </div>
 
-          <Link to="/catalog" className="ghost-button" style={browseMoreStyle}>
-            Browse More
+          <Link to="/catalog" className="ghost-button">
+            {t('gameDetailPage.browseMore')}
           </Link>
         </div>
 
         <div style={cardGridStyle}>
-          {relatedGames.map((item) => (
-            <GameCard key={item.id} game={item} />
+          {relatedGames.map((relatedGame) => (
+            <GameCard key={relatedGame.id} game={relatedGame} />
           ))}
         </div>
       </section>
@@ -424,16 +399,16 @@ const styles = {
     marginBottom: '1.25rem',
   },
   breadcrumbLink: {
-    color: '#7c3aed',
-    fontWeight: 700,
+    color: '#6d6289',
     textDecoration: 'none',
+    fontWeight: 700,
   },
   breadcrumbDivider: {
-    color: '#8f84ab',
+    color: '#b3a4cf',
   },
   breadcrumbCurrent: {
-    color: '#4c4168',
-    fontWeight: 700,
+    color: '#140f24',
+    fontWeight: 800,
   },
   detailLayout: {
     display: 'grid',
@@ -443,58 +418,54 @@ const styles = {
   mediaCard: {
     background: '#ffffff',
     border: '1px solid rgba(124, 58, 237, 0.1)',
-    borderRadius: '28px',
+    borderRadius: '24px',
     boxShadow: '0 14px 34px rgba(91, 33, 182, 0.08)',
   },
   coverArea: {
-    minHeight: '360px',
-    borderRadius: '22px',
+    height: '360px',
+    borderRadius: '20px',
+    overflow: 'hidden',
     display: 'grid',
     placeItems: 'center',
-    background: 'linear-gradient(135deg, #1b1030, #7c3aed)',
-    overflow: 'hidden',
+    background: 'linear-gradient(135deg, #21103b, #7c3aed)',
   },
   detailCoverImage: {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
-    display: 'block',
   },
   coverLabel: {
     color: '#ffffff',
-    fontWeight: 800,
-    letterSpacing: '0.04em',
+    fontWeight: 700,
   },
   galleryGrid: {
-    marginTop: '1rem',
     display: 'grid',
-    gap: '0.75rem',
+    gap: '0.85rem',
+    marginTop: '1rem',
   },
   galleryItem: {
-    minHeight: '92px',
+    height: '120px',
     borderRadius: '16px',
+    overflow: 'hidden',
     display: 'grid',
     placeItems: 'center',
-    background: '#f6f4ff',
+    background: '#f3f0ff',
     color: '#6d6289',
     fontWeight: 700,
-    border: '1px solid rgba(124, 58, 237, 0.08)',
-    overflow: 'hidden',
   },
   galleryImage: {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
-    display: 'block',
   },
   infoCard: {
     background: '#ffffff',
     border: '1px solid rgba(124, 58, 237, 0.1)',
-    borderRadius: '28px',
+    borderRadius: '24px',
     boxShadow: '0 14px 34px rgba(91, 33, 182, 0.08)',
   },
   title: {
-    margin: '1rem 0 0.7rem',
+    margin: '1rem 0 0.75rem',
     color: '#140f24',
     lineHeight: 1.1,
   },
@@ -502,7 +473,6 @@ const styles = {
     margin: 0,
     color: '#6d6289',
     lineHeight: 1.8,
-    fontSize: '1rem',
   },
   metaGrid: {
     display: 'grid',
@@ -511,28 +481,30 @@ const styles = {
   },
   metaItem: {
     background: '#f8f7ff',
+    borderRadius: '16px',
+    padding: '0.9rem',
     border: '1px solid rgba(124, 58, 237, 0.08)',
-    borderRadius: '18px',
-    padding: '0.95rem 1rem',
-    display: 'grid',
-    gap: '0.35rem',
   },
   metaLabel: {
-    color: '#7a6d95',
-    fontSize: '0.85rem',
+    display: 'block',
+    color: '#6d6289',
     fontWeight: 700,
+    fontSize: '0.85rem',
   },
   metaValue: {
-    color: '#181028',
-    fontWeight: 800,
+    display: 'block',
+    marginTop: '0.35rem',
+    color: '#140f24',
+    fontWeight: 700,
   },
   price: {
+    display: 'block',
+    marginTop: '0.35rem',
     color: '#7c3aed',
     fontWeight: 800,
-    fontSize: '1.1rem',
   },
   descriptionBlock: {
-    marginTop: '1.5rem',
+    marginTop: '1.25rem',
   },
   sectionTitle: {
     margin: 0,
@@ -540,8 +512,8 @@ const styles = {
     fontSize: '1.2rem',
   },
   descriptionText: {
-    margin: '0.85rem 0 0',
-    color: '#5f547a',
+    margin: '0.75rem 0 0',
+    color: '#6d6289',
     lineHeight: 1.8,
   },
   actionRow: {
@@ -556,10 +528,19 @@ const styles = {
   reviewSectionHeader: {
     marginBottom: '1rem',
   },
+  sectionHeading: {
+    margin: 0,
+    color: '#140f24',
+    fontSize: '1.7rem',
+  },
+  sectionText: {
+    margin: '0.55rem 0 0',
+    color: '#6d6289',
+    lineHeight: 1.7,
+  },
   reviewLayout: {
     display: 'grid',
-    gap: '1rem',
-    alignItems: 'start',
+    gap: '1.25rem',
   },
   reviewListCard: {
     background: '#ffffff',
@@ -571,8 +552,10 @@ const styles = {
     gap: '1rem',
   },
   reviewItem: {
-    paddingBottom: '1rem',
-    borderBottom: '1px solid rgba(124, 58, 237, 0.08)',
+    background: '#f8f7ff',
+    borderRadius: '18px',
+    padding: '1rem',
+    border: '1px solid rgba(124, 58, 237, 0.08)',
   },
   reviewTopRow: {
     display: 'flex',
@@ -581,17 +564,17 @@ const styles = {
   },
   reviewName: {
     margin: 0,
-    color: '#181028',
+    color: '#140f24',
     fontSize: '1rem',
   },
   reviewStars: {
     margin: '0.35rem 0 0',
-    color: '#f59e0b',
-    fontWeight: 800,
+    color: '#7c3aed',
+    fontWeight: 700,
   },
   reviewComment: {
     margin: '0.75rem 0 0',
-    color: '#5f547a',
+    color: '#6d6289',
     lineHeight: 1.7,
   },
   reviewFormCard: {
@@ -618,9 +601,8 @@ const styles = {
   },
   textarea: {
     resize: 'vertical',
-    minHeight: '120px',
   },
-  submitButton: {
+  fullButton: {
     width: '100%',
     marginTop: '1rem',
     display: 'inline-flex',
@@ -635,28 +617,16 @@ const styles = {
     justifyContent: 'space-between',
     gap: '1rem',
     marginBottom: '1rem',
-    flexWrap: 'wrap',
-  },
-  sectionHeading: {
-    margin: 0,
-    color: '#140f24',
-    fontSize: '1.45rem',
-  },
-  sectionText: {
-    margin: '0.45rem 0 0',
-    color: '#6d6289',
-    lineHeight: 1.6,
   },
   cardGrid: {
     display: 'grid',
     gap: '1rem',
   },
   notFound: {
-    minHeight: '70vh',
+    minHeight: '60vh',
     display: 'grid',
     placeItems: 'center',
     textAlign: 'center',
-    gap: '1rem',
   },
   notFoundTitle: {
     margin: 0,
@@ -664,7 +634,7 @@ const styles = {
     fontSize: '2rem',
   },
   notFoundText: {
-    margin: 0,
+    margin: '0.75rem 0 1.25rem',
     color: '#6d6289',
     lineHeight: 1.7,
   },

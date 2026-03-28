@@ -1,36 +1,50 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import GameCard from '../components/GameCard.jsx'
-import AppLayout from '../layouts/AppLayout.jsx'
+import { useLanguage } from '../context/LanguageContext.jsx'
 import { games } from '../data/games.js'
+import AppLayout from '../layouts/AppLayout.jsx'
 import { useResponsive } from '../utils/useResponsive.js'
+
+const GENRE_ALL = 'ALL'
+const PLATFORM_ALL = 'ALL'
+const RATING_ANY = 'ANY'
+const RATING_45 = '4.5'
+const RATING_40 = '4.0'
+const RATING_35 = '3.5'
+const SORT_POPULARITY = 'POPULARITY'
+const SORT_PRICE_ASC = 'PRICE_ASC'
+const SORT_PRICE_DESC = 'PRICE_DESC'
+const SORT_RELEASE_DATE = 'RELEASE_DATE'
+const SORT_TITLE = 'TITLE'
 
 function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const initialQuery = searchParams.get('q') || ''
   const { isMobile, isTablet, isDesktop } = useResponsive()
+  const { t } = useLanguage()
 
   const [searchTerm, setSearchTerm] = useState(initialQuery)
-  const [genre, setGenre] = useState('All Genres')
-  const [platform, setPlatform] = useState('All Platforms')
+  const [genre, setGenre] = useState(GENRE_ALL)
+  const [platform, setPlatform] = useState(PLATFORM_ALL)
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
   const [startYear, setStartYear] = useState('')
   const [endYear, setEndYear] = useState('')
-  const [rating, setRating] = useState('Any Rating')
-  const [sortBy, setSortBy] = useState('Popularity')
+  const [rating, setRating] = useState(RATING_ANY)
+  const [sortBy, setSortBy] = useState(SORT_POPULARITY)
 
   const stats = useMemo(() => {
-    if (!games || games.length === 0) return { minP: 0, maxP: 0, minY: 0, maxY: 0 };
-    const prices = games.map((g) => g.price);
-    const years = games.map((g) => g.year);
+    const prices = games.map((g) => g.price)
+    const years = games.map((g) => g.year)
+
     return {
       minP: Math.min(...prices),
       maxP: Math.max(...prices),
       minY: Math.min(...years),
       maxY: Math.max(...years),
-    };
-  }, []);
+    }
+  }, [])
 
   useEffect(() => {
     const queryFromUrl = searchParams.get('q') || ''
@@ -38,12 +52,31 @@ function CatalogPage() {
   }, [searchParams])
 
   const genreOptions = useMemo(() => {
-    return ['All Genres', ...new Set(games.map((game) => game.genre))]
+    return [GENRE_ALL, ...new Set(games.map((game) => game.genre))]
   }, [])
 
   const platformOptions = useMemo(() => {
-    return ['All Platforms', ...new Set(games.map((game) => game.platform))]
+    return [PLATFORM_ALL, ...new Set(games.map((game) => game.platform))]
   }, [])
+
+  const sortOptions = useMemo(() => {
+    return [
+      { value: SORT_POPULARITY, label: t('catalogPage.popularity') },
+      { value: SORT_PRICE_ASC, label: t('catalogPage.priceLowToHigh') },
+      { value: SORT_PRICE_DESC, label: t('catalogPage.priceHighToLow') },
+      { value: SORT_RELEASE_DATE, label: t('catalogPage.releaseDate') },
+      { value: SORT_TITLE, label: t('catalogPage.titleSort') },
+    ]
+  }, [t])
+
+  const ratingOptions = useMemo(() => {
+    return [
+      { value: RATING_ANY, label: t('catalogPage.anyRating') },
+      { value: RATING_45, label: '4.5+' },
+      { value: RATING_40, label: '4.0+' },
+      { value: RATING_35, label: '3.5+' },
+    ]
+  }, [t])
 
   const filteredGames = useMemo(() => {
     const min = minPrice === '' ? null : Number(minPrice)
@@ -57,18 +90,17 @@ function CatalogPage() {
         game.genre.toLowerCase().includes(searchTerm.toLowerCase()) ||
         game.platform.toLowerCase().includes(searchTerm.toLowerCase())
 
-      const matchesGenre = genre === 'All Genres' || game.genre === genre
-      const matchesPlatform =
-        platform === 'All Platforms' || game.platform === platform
+      const matchesGenre = genre === GENRE_ALL || game.genre === genre
+      const matchesPlatform = platform === PLATFORM_ALL || game.platform === platform
       const matchesMinPrice = min === null || game.price >= min
       const matchesMaxPrice = max === null || game.price <= max
       const matchesStartYear = yearMin === null || game.year >= yearMin
       const matchesEndYear = yearMax === null || game.year <= yearMax
 
       let matchesRating = true
-      if (rating === '4.5+') matchesRating = game.rating >= 4.5
-      if (rating === '4.0+') matchesRating = game.rating >= 4.0
-      if (rating === '3.5+') matchesRating = game.rating >= 3.5
+      if (rating === RATING_45) matchesRating = game.rating >= 4.5
+      if (rating === RATING_40) matchesRating = game.rating >= 4.0
+      if (rating === RATING_35) matchesRating = game.rating >= 3.5
 
       return (
         matchesSearch &&
@@ -83,10 +115,10 @@ function CatalogPage() {
     })
 
     items = [...items].sort((a, b) => {
-      if (sortBy === 'Price: Low to High') return a.price - b.price
-      if (sortBy === 'Price: High to Low') return b.price - a.price
-      if (sortBy === 'Release Date') return b.year - a.year
-      if (sortBy === 'Title') return a.title.localeCompare(b.title)
+      if (sortBy === SORT_PRICE_ASC) return a.price - b.price
+      if (sortBy === SORT_PRICE_DESC) return b.price - a.price
+      if (sortBy === SORT_RELEASE_DATE) return b.year - a.year
+      if (sortBy === SORT_TITLE) return a.title.localeCompare(b.title)
       return b.rating - a.rating
     })
 
@@ -107,14 +139,14 @@ function CatalogPage() {
 
   function resetFilters() {
     setSearchTerm('')
-    setGenre('All Genres')
-    setPlatform('All Platforms')
+    setGenre(GENRE_ALL)
+    setPlatform(PLATFORM_ALL)
     setMinPrice('')
     setMaxPrice('')
     setStartYear('')
     setEndYear('')
-    setRating('Any Rating')
-    setSortBy('Popularity')
+    setRating(RATING_ANY)
+    setSortBy(SORT_POPULARITY)
     setSearchParams({})
   }
 
@@ -168,17 +200,14 @@ function CatalogPage() {
   return (
     <AppLayout>
       <section style={styles.pageIntro}>
-        <h1 style={styles.pageTitle}>Game Catalog</h1>
-        <p style={styles.pageText}>
-          Search, filter, and sort retro titles across genres, platforms, and
-          release years.
-        </p>
+        <h1 style={styles.pageTitle}>{t('catalogPage.title')}</h1>
+        <p style={styles.pageText}>{t('catalogPage.description')}</p>
       </section>
 
       <section style={catalogLayoutStyle}>
         <aside style={filterPanelStyle}>
           <div style={filterHeaderStyle}>
-            <h2 style={styles.filterTitle}>Filters</h2>
+            <h2 style={styles.filterTitle}>{t('catalogPage.filters')}</h2>
 
             <button
               type="button"
@@ -186,151 +215,138 @@ function CatalogPage() {
               style={resetButtonStyle}
               onClick={resetFilters}
             >
-              Reset
+              {t('common.reset')}
             </button>
           </div>
 
           <div style={styles.filterGroup}>
-            <label style={styles.filterLabel}>Search</label>
+            <label style={styles.filterLabel}>{t('catalogPage.search')}</label>
             <input
               className="field"
-              placeholder="Search games..."
+              placeholder={t('common.searchRetroGames')}
               value={searchTerm}
               onChange={handleSearchChange}
             />
           </div>
 
           <div style={styles.filterGroup}>
-            <label style={styles.filterLabel}>Genre</label>
-            <select
-              className="field"
-              value={genre}
-              onChange={(event) => setGenre(event.target.value)}
-            >
+            <label style={styles.filterLabel}>{t('catalogPage.genre')}</label>
+            <select className="field" value={genre} onChange={(event) => setGenre(event.target.value)}>
               {genreOptions.map((option) => (
-                <option key={option}>{option}</option>
+                <option key={option} value={option}>
+                  {option === GENRE_ALL ? t('catalogPage.allGenres') : option}
+                </option>
               ))}
             </select>
           </div>
 
           <div style={styles.filterGroup}>
-            <label style={styles.filterLabel}>Platform</label>
+            <label style={styles.filterLabel}>{t('catalogPage.platform')}</label>
             <select
               className="field"
               value={platform}
               onChange={(event) => setPlatform(event.target.value)}
             >
               {platformOptions.map((option) => (
-                <option key={option}>{option}</option>
+                <option key={option} value={option}>
+                  {option === PLATFORM_ALL ? t('catalogPage.allPlatforms') : option}
+                </option>
               ))}
             </select>
           </div>
 
           <div style={styles.filterGroup}>
-            <label style={styles.filterLabel}>Minimum Price</label>
+            <label style={styles.filterLabel}>{t('catalogPage.minimumPrice')}</label>
             <input
               className="field"
               type="number"
-              min={stats.minP}        // Lower bound from data
-              max={maxPrice || stats.maxP} // Cannot exceed current max
-              placeholder={stats.minP}
+              min={stats.minP}
+              max={maxPrice || stats.maxP}
+              placeholder={String(stats.minP)}
               value={minPrice}
               onChange={(event) => setMinPrice(event.target.value)}
             />
           </div>
 
           <div style={styles.filterGroup}>
-            <label style={styles.filterLabel}>Maximum Price</label>
+            <label style={styles.filterLabel}>{t('catalogPage.maximumPrice')}</label>
             <input
               className="field"
               type="number"
-              min={minPrice || stats.minP} // Cannot be lower than current min
-              max={stats.maxP}        // Upper bound from data
-              placeholder={stats.maxP}
+              min={minPrice || stats.minP}
+              max={stats.maxP}
+              placeholder={String(stats.maxP)}
               value={maxPrice}
               onChange={(event) => setMaxPrice(event.target.value)}
             />
           </div>
 
           <div style={styles.filterGroup}>
-            <label style={styles.filterLabel}>Start Year</label>
+            <label style={styles.filterLabel}>{t('catalogPage.startYear')}</label>
             <input
               className="field"
               type="number"
               min={stats.minY}
               max={endYear || stats.maxY}
-              placeholder={stats.minY}
+              placeholder={String(stats.minY)}
               value={startYear}
               onChange={(event) => setStartYear(event.target.value)}
             />
           </div>
 
           <div style={styles.filterGroup}>
-            <label style={styles.filterLabel}>End Year</label>
+            <label style={styles.filterLabel}>{t('catalogPage.endYear')}</label>
             <input
               className="field"
               type="number"
               min={startYear || stats.minY}
               max={stats.maxY}
-              placeholder={stats.maxY}
+              placeholder={String(stats.maxY)}
               value={endYear}
               onChange={(event) => setEndYear(event.target.value)}
             />
           </div>
 
           <div style={styles.filterGroup}>
-            <label style={styles.filterLabel}>Rating</label>
-            <select
-              className="field"
-              value={rating}
-              onChange={(event) => setRating(event.target.value)}
-            >
-              <option>Any Rating</option>
-              <option>4.5+</option>
-              <option>4.0+</option>
-              <option>3.5+</option>
+            <label style={styles.filterLabel}>{t('catalogPage.minimumRating')}</label>
+            <select className="field" value={rating} onChange={(event) => setRating(event.target.value)}>
+              {ratingOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
-          </div>
-
-          <div style={styles.filterNote}>
-            Filters update automatically as you browse.
           </div>
         </aside>
 
         <div style={styles.catalogContent}>
           <div style={toolbarStyle}>
             <p style={styles.resultsText}>
-              Showing {filteredGames.length} of {games.length} games
+              {filteredGames.length} {t('catalogPage.resultsFound')}
             </p>
 
-            <select
-              className="field"
-              style={sortSelectStyle}
-              value={sortBy}
-              onChange={(event) => setSortBy(event.target.value)}
-            >
-              <option>Popularity</option>
-              <option>Price: Low to High</option>
-              <option>Price: High to Low</option>
-              <option>Release Date</option>
-              <option>Title</option>
-            </select>
+            <div style={styles.sortWrap}>
+              <label style={styles.sortLabel}>{t('catalogPage.sortBy')}</label>
+              <select
+                className="field"
+                style={sortSelectStyle}
+                value={sortBy}
+                onChange={(event) => setSortBy(event.target.value)}
+              >
+                {sortOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {filteredGames.length > 0 ? (
-            <div style={cardGridStyle}>
-              {filteredGames.map((game) => (
-                <GameCard key={game.id} game={game} />
-              ))}
-            </div>
-          ) : (
-            <div style={styles.emptyState}>
-              <h3 style={styles.emptyTitle}>No games found</h3>
-              <p style={styles.emptyText}>
-                Try changing your search or resetting the filters.
-              </p>
-            </div>
-          )}
+          <div style={cardGridStyle}>
+            {filteredGames.map((game) => (
+              <GameCard key={game.id} game={game} />
+            ))}
+          </div>
         </div>
       </section>
     </AppLayout>
@@ -366,15 +382,14 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     gap: '0.75rem',
+    marginBottom: '1rem',
   },
   filterTitle: {
     margin: 0,
     color: '#140f24',
     fontSize: '1.2rem',
   },
-  resetButton: {
-    padding: '0.55rem 0.85rem',
-  },
+  resetButton: {},
   filterGroup: {
     marginTop: '1rem',
   },
@@ -385,52 +400,35 @@ const styles = {
     fontWeight: 700,
     fontSize: '0.9rem',
   },
-  filterNote: {
-    marginTop: '1rem',
-    color: '#6d6289',
-    fontSize: '0.9rem',
-    lineHeight: 1.6,
-  },
   catalogContent: {
-    minWidth: 0,
+    display: 'grid',
+    gap: '1rem',
   },
   catalogToolbar: {
     display: 'flex',
     justifyContent: 'space-between',
     gap: '1rem',
-    marginBottom: '1rem',
-    flexWrap: 'wrap',
   },
   resultsText: {
     margin: 0,
     color: '#6d6289',
-    fontWeight: 600,
+    fontWeight: 700,
+  },
+  sortWrap: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    flexWrap: 'wrap',
+  },
+  sortLabel: {
+    color: '#4c4168',
+    fontWeight: 700,
+    fontSize: '0.9rem',
   },
   sortSelect: {},
   cardGrid: {
     display: 'grid',
     gap: '1rem',
-  },
-  emptyState: {
-    minHeight: '280px',
-    background: '#ffffff',
-    border: '1px solid rgba(124, 58, 237, 0.1)',
-    borderRadius: '24px',
-    display: 'grid',
-    placeItems: 'center',
-    textAlign: 'center',
-    padding: '2rem',
-    boxShadow: '0 14px 34px rgba(91, 33, 182, 0.08)',
-  },
-  emptyTitle: {
-    margin: 0,
-    color: '#140f24',
-    fontSize: '1.25rem',
-  },
-  emptyText: {
-    margin: '0.75rem 0 0',
-    color: '#6d6289',
-    lineHeight: 1.7,
   },
 }
 

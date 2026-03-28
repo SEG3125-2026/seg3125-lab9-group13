@@ -6,9 +6,11 @@ import {
   setAuthToken,
   setAuthUser,
 } from '../utils/api.js'
+import { useLanguage } from '../context/LanguageContext.jsx'
 
 function LoginPage() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState('login')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -86,7 +88,7 @@ function LoginPage() {
     clearFeedback()
 
     if (signUpForm.password !== signUpForm.confirmPassword) {
-      setError('Passwords do not match.')
+      setError(t('loginPage.passwordsDoNotMatch'))
       return
     }
 
@@ -102,7 +104,7 @@ function LoginPage() {
         }),
       })
 
-      setMessage('Account created successfully. Please log in.')
+      setMessage(t('loginPage.registerSuccess'))
       setActiveTab('login')
       setLoginForm({
         email: signUpForm.email,
@@ -126,14 +128,14 @@ function LoginPage() {
       <section style={styles.loginWrapper}>
         <div style={styles.loginCard}>
           <div style={styles.loginHeader}>
-            <span style={styles.badge}>Player Access</span>
+            <span style={styles.badge}>{t('loginPage.badge')}</span>
             <h1 style={styles.loginTitle}>
-              {activeTab === 'login' ? 'Login to your account' : 'Create your account'}
+              {activeTab === 'login' ? t('loginPage.loginTitle') : t('loginPage.signupTitle')}
             </h1>
             <p style={styles.loginText}>
               {activeTab === 'login'
-                ? 'Access your cart, order history, and favorite retro picks.'
-                : 'Join Player 2: Parlor and start building your retro game collection.'}
+                ? t('loginPage.loginText')
+                : t('loginPage.signupText')}
             </p>
           </div>
 
@@ -146,7 +148,7 @@ function LoginPage() {
               }}
               style={getTabStyle(activeTab === 'login')}
             >
-              Login
+              {t('common.login')}
             </button>
 
             <button
@@ -157,7 +159,7 @@ function LoginPage() {
               }}
               style={getTabStyle(activeTab === 'signup')}
             >
-              Sign Up
+              {t('loginPage.signUp')}
             </button>
           </div>
 
@@ -186,10 +188,12 @@ function LoginPage() {
 }
 
 function LoginForm({ formData, onChange, onSubmit, loading }) {
+  const { t } = useLanguage()
+
   return (
     <form style={styles.formArea} onSubmit={onSubmit}>
       <div style={styles.formGroup}>
-        <label style={styles.filterLabel}>Email</label>
+        <label style={styles.filterLabel}>{t('loginPage.email')}</label>
         <input
           className="field"
           type="email"
@@ -201,33 +205,33 @@ function LoginForm({ formData, onChange, onSubmit, loading }) {
       </div>
 
       <div style={styles.formGroup}>
-        <label style={styles.filterLabel}>Password</label>
+        <label style={styles.filterLabel}>{t('loginPage.password')}</label>
         <input
           className="field"
           type="password"
           name="password"
-          placeholder="Enter your password"
+          placeholder={t('loginPage.enterPassword')}
           value={formData.password}
           onChange={onChange}
         />
       </div>
 
       <button className="pixel-button" style={styles.fullButton} type="submit" disabled={loading}>
-        {loading ? 'Loading...' : 'Login'}
+        {loading ? t('common.loading') : t('loginPage.loginButton')}
       </button>
 
-      <p style={styles.helperText}>
-        New here? Switch to <strong>Sign Up</strong> to create an account.
-      </p>
+      <p style={styles.helperText}>{t('loginPage.newHere')}</p>
     </form>
   )
 }
 
 function SignUpForm({ formData, onChange, onSubmit, loading }) {
+  const { t } = useLanguage()
+
   return (
     <form style={styles.formArea} onSubmit={onSubmit}>
       <div style={styles.formGroup}>
-        <label style={styles.filterLabel}>Username</label>
+        <label style={styles.filterLabel}>{t('loginPage.username')}</label>
         <input
           className="field"
           type="text"
@@ -239,7 +243,7 @@ function SignUpForm({ formData, onChange, onSubmit, loading }) {
       </div>
 
       <div style={styles.formGroup}>
-        <label style={styles.filterLabel}>Email</label>
+        <label style={styles.filterLabel}>{t('loginPage.email')}</label>
         <input
           className="field"
           type="email"
@@ -251,36 +255,34 @@ function SignUpForm({ formData, onChange, onSubmit, loading }) {
       </div>
 
       <div style={styles.formGroup}>
-        <label style={styles.filterLabel}>Password</label>
+        <label style={styles.filterLabel}>{t('loginPage.password')}</label>
         <input
           className="field"
           type="password"
           name="password"
-          placeholder="Create a password"
+          placeholder={t('loginPage.createPassword')}
           value={formData.password}
           onChange={onChange}
         />
       </div>
 
       <div style={styles.formGroup}>
-        <label style={styles.filterLabel}>Confirm Password</label>
+        <label style={styles.filterLabel}>{t('loginPage.confirmPassword')}</label>
         <input
           className="field"
           type="password"
           name="confirmPassword"
-          placeholder="Confirm your password"
+          placeholder={t('loginPage.confirmPassword')}
           value={formData.confirmPassword}
           onChange={onChange}
         />
       </div>
 
       <button className="pixel-button" style={styles.fullButton} type="submit" disabled={loading}>
-        {loading ? 'Loading...' : 'Create Account'}
+        {loading ? t('common.loading') : t('loginPage.createAccountButton')}
       </button>
 
-      <p style={styles.helperText}>
-        Already have an account? Switch back to <strong>Login</strong>.
-      </p>
+      <p style={styles.helperText}>{t('loginPage.alreadyHaveAccount')}</p>
     </form>
   )
 }
